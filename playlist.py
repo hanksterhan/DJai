@@ -4,17 +4,25 @@ import webbrowser
 import spotipy.util as util
 from simplejson import JSONDecodeError
 import json
+from dotenv import load_dotenv
 
-# Get the username from terminal
-username = sys.argv[1]
+load_dotenv()
+
+# Get the username from .env file
+username = os.getenv("SPOTIFY_USERNAME")
+
+# Get clientID and clientSecret from .env file
+clientID = os.getenv("CLIENT_ID")
+clientSecret = os.getenv("CLIENT_SECRET")
+
 scope = 'user-read-private user-read-playback-state user-modify-playback-state'
 
 # Erase cache and prompt for user permission
 try:
-    token = util.prompt_for_user_token(username, scope)
+    token = util.prompt_for_user_token(username, scope, client_id=clientID, client_secret=clientSecret)
 except:
     os.remove(f".cache-{username}")
-    token = util.prompt_for_user_token(username, scope)
+    token = util.prompt_for_user_token(username, scope, client_id=clientID, client_secret=clientSecret)
 
 # Create our spotify Object
 spotifyObj = spotipy.Spotify(auth=token)
@@ -49,6 +57,7 @@ print(">>> Welcome to Spotipy " + displayName)
 print(">>> You have " + str(followers) + " followers.")
 print()
 
+# logic for searching for artist and track
 while True:
     print("0 - Search for an artist")
     print("1 - exit")
