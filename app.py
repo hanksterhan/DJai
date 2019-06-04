@@ -24,7 +24,42 @@ app.layout = html.Div(children=[
         html.Label('Artist Name'),
         dcc.Input(id='artist', value='Chance the Rapper', type='text'),
 
-        html.Button(id='submit-button', children="Run"),
+        html.Label('Song Name'),
+        dcc.Input(id='song', value='Blessings', type='text'),
+
+        html.Div(id='popularity-output'),
+        dcc.RangeSlider(id='popularity', min=0, max=100, step=1, value=[0,100],
+                    marks={i: '{}'.format(i) for i in range(0,101,10)}),
+
+        html.Div(id='tempo-output',
+            style={
+                'padding': '20px 10px 0px 0px'
+            }),
+        dcc.RangeSlider(id='tempo', min=40, max=200, step=4, value=[40,200],
+                    marks={i: '{}'.format(i) for i in range(40,201,10)}),
+
+        html.Div(id='energy-output',
+            style={
+                'padding': '20px 10px 0px 0px'
+            }),
+        dcc.RangeSlider(id='energy', min=0, max=100, step=1, value=[0,100],
+                    marks={i: '{}'.format(i) for i in range(0,101,10)}),
+
+        html.Div(id='dance-output', 
+            style={
+                'padding': '20px 10px 0px 0px'
+            }),
+        dcc.RangeSlider(id='dance', min=0, max=100, step=1, value=[0,100],
+                    marks={i: '{}'.format(i) for i in range(0,101,10)}),
+
+        html.Div(id='valence-output', 
+            style={
+                'padding': '20px 10px 0px 0px'
+            }),
+        dcc.RangeSlider(id='valence', min=0, max=100, step=1, value=[0,100],
+                    marks={i: '{}'.format(i) for i in range(0,101,10)}),
+
+        html.Button(id='submit-button', children="Query"),
         
         html.Div(id='artist_results'),
     ]),
@@ -87,6 +122,46 @@ def query_artist(nclicks, token, artist):
     print(json.dumps(searchResults, sort_keys=True, indent=4))
 
     return(artist['name'] + ', ', str(artist['followers']['total']) + " followers, " + artist['genres'][0])
+
+#callback to display the query's popularity range
+@app.callback(
+    dash.dependencies.Output('popularity-output', 'children'), 
+    [dash.dependencies.Input('popularity', 'value')],
+)
+def update_output(value):
+    return('Popularity: {} - {}'.format(value[0], value[1]))
+
+#callback to display the query's tempo range
+@app.callback(
+    dash.dependencies.Output('tempo-output', 'children'), 
+    [dash.dependencies.Input('tempo', 'value')],
+)
+def update_output(value):
+    return('Tempo: {}bpm - {}bpm'.format(value[0], value[1]))
+
+#callback to display the query's energy range
+@app.callback(
+    dash.dependencies.Output('energy-output', 'children'), 
+    [dash.dependencies.Input('energy', 'value')],
+)
+def update_output(value):
+    return('Energy: {} - {}'.format(value[0], value[1]))
+
+#callback to display the query's danceability range
+@app.callback(
+    dash.dependencies.Output('dance-output', 'children'), 
+    [dash.dependencies.Input('dance', 'value')],
+)
+def update_output(value):
+    return('Danceability: {} - {}'.format(value[0], value[1]))
+
+#callback to display the query's valence range
+@app.callback(
+    dash.dependencies.Output('valence-output', 'children'), 
+    [dash.dependencies.Input('valence', 'value')],
+)
+def update_output(value):
+    return('Valence (positivity of the track): {} - {}'.format(value[0], value[1]))
 
 if __name__ == '__main__':
     app.run_server(debug=True)
