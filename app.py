@@ -2,10 +2,11 @@
 
 import os, sys, json
 import dash
+import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-import plotly.graph_objs as go
+import pandas as pd
 import spotipy
 import webbrowser
 import spotipy.util as util
@@ -17,6 +18,11 @@ from dotenv import load_dotenv
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
+df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/solar.csv')
+# print(df.to_dict('records'))
+# print(json.dumps(df.to_dict('records'), sort_keys=True, indent=4))
+
 
 app.layout = html.Div(children=[
     html.H1("DJai - an AI DJ connected to your Spotify"),
@@ -63,7 +69,44 @@ app.layout = html.Div(children=[
         
         html.Div(id='artist_results'),
         html.Div(id='query_results'),
+        html.Img(src='https://i.scdn.co/image/1bff4810ee9ec007194269ae5aff80da11c38889'),
     ]),
+    
+    dash_table.DataTable(
+        id='datatable', 
+        columns=[{"name": i, "id": i} for i in ['Artist', 'Song', 'Link to Song', 'Link to Album Art']],
+        # data=df.to_dict('records'),
+        n_fixed_rows=1,
+        style_table={
+            'maxHeight': '300',
+            'overflowY': 'scroll'
+        },
+        style_cell={'padding': '5px'},
+        style_header={
+            'backgroundColor': 'light gray',
+            'fontWeight': 'bold',
+        },
+        style_cell_conditional=[
+            {'if': {'row_index': 'odd'},
+             'backgroundColor': 'rgb(248,248,248)'
+            },
+            {'if': {'column_id':'Artist'},
+             'width': '25%',
+             'textAlign': 'left'},
+            {'if': {'column_id':'Song'},
+             'width': '25%',
+             'textAlign': 'left'},
+            {'if': {'column_id':'Link to Song'},
+             'width': '25%',
+             'textAlign': 'left'},
+            {'if': {'column_id':'Link to album art'},
+             'width': '25%',
+             'textAlign': 'left'},
+        ],
+        style_as_list_view=True,
+        virtualization=True,
+        pagination_mode=False,
+    ),
     
     # Hidden div inside the app that stores the SpotifyObj
     html.Div(id='spotify_data', style={'display': 'none'}),
@@ -77,40 +120,40 @@ app.layout = html.Div(children=[
 
 #callback to display the query's popularity range
 @app.callback(
-    dash.dependencies.Output('popularity_output', 'children'), 
-    [dash.dependencies.Input('popularity', 'value')],
+    Output('popularity_output', 'children'), 
+    [Input('popularity', 'value')],
 )
 def update_output(value):
     return('Popularity: {} - {}'.format(value[0], value[1]))
 
 #callback to display the query's tempo range
 @app.callback(
-    dash.dependencies.Output('tempo_output', 'children'), 
-    [dash.dependencies.Input('tempo', 'value')],
+    Output('tempo_output', 'children'), 
+    [Input('tempo', 'value')],
 )
 def update_output(value):
     return('Tempo: {}bpm - {}bpm'.format(value[0], value[1]))
 
 #callback to display the query's energy range
 @app.callback(
-    dash.dependencies.Output('energy_output', 'children'), 
-    [dash.dependencies.Input('energy', 'value')],
+    Output('energy_output', 'children'), 
+    [Input('energy', 'value')],
 )
 def update_output(value):
     return('Energy: {} - {}'.format(value[0], value[1]))
 
 #callback to display the query's danceability range
 @app.callback(
-    dash.dependencies.Output('dance_output', 'children'), 
-    [dash.dependencies.Input('dance', 'value')],
+    Output('dance_output', 'children'), 
+    [Input('dance', 'value')],
 )
 def update_output(value):
     return('Danceability: {} - {}'.format(value[0], value[1]))
 
 #callback to display the query's valence range
 @app.callback(
-    dash.dependencies.Output('valence_output', 'children'), 
-    [dash.dependencies.Input('valence', 'value')],
+    Output('valence_output', 'children'), 
+    [Input('valence', 'value')],
 )
 def update_output(value):
     return('Valence (positivity of the track): {} - {}'.format(value[0], value[1]))
@@ -191,7 +234,7 @@ def query_artist(nclicks, token, artist):
 
 # Recommendation callback
 @app.callback(
-    Output('query_results', 'children'),
+    Output('datatable', 'data'),
     [Input('submit_button', 'n_clicks')],
     [State('spotify_data', 'children'),
      State('artist_uri', 'children'),
@@ -221,14 +264,29 @@ def query_tracks(n_clicks, token, artist_uris, popularity, tempo, energy, dance,
                                                limit=2)
 
 
-    print(json.dumps(searchResults['tracks'], sort_keys=True, indent=4))
+    # print(json.dumps(searchResults['tracks'], sort_keys=True, indent=4))
     for result in searchResults['tracks']:
         print("Artists: ", [artist['name'] for artist in result['artists']])
         print("Song: ", result['name'])
         print("Link to song: ", result['external_urls']["spotify"])
+        print("Link to album art:", result['album']['images'][2]['url'])
         print()
 
-    return(searchResults)
+    data = []
+
+    for result in searchResults['tracks']:
+        data_dict = {
+            "Artist": str([artist['name'] for artist in result['artists']]),
+            "Song": result['name'],
+            "Link to Song": result['external_urls']['spotify'],
+            "Link to Album Art": "html.Img(src=result['album']['images'][2]['url']),"
+        }
+        data.append(data_dict)
+
+    print(json.dumps(data, sort_keys=True, indent=4))
+    # return(searchResults)
+    return(data)
+    
 
 if __name__ == '__main__':
     app.run_server(debug=True)
