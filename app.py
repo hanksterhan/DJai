@@ -32,7 +32,15 @@ app.layout = html.Div(children=[
 
         html.Label('Song Name'),
         dcc.Input(id='song', value='Blessings', type='text'),
-
+        html.Div([
+            html.Button(id='play_button', 
+                children="Play on Device",
+                style={
+                    'margin':'2%',
+                }
+            ),
+            dcc.Dropdown(id="devices")#, style={'display': 'none'}),
+        ]),
         html.Div([
             html.Div(id='popularity_output'),
             dcc.RangeSlider(id='popularity', min=0, max=100, step=1, value=[0,100],
@@ -124,7 +132,9 @@ app.layout = html.Div(children=[
     # Hidden div inside the app that stores the SpotifyObj
     html.Div(id='spotify_data', style={'display': 'none'}),
     html.Div(id='artist_uri', style={'display': 'none'}),
-    html.Div(id='song_uris', style={'display':'none'})
+    html.Div(id='song_uris', style={'display':'none'}),
+    # html.Div(id='devices', style={'display':'none'}),
+
 
 ], style={
             'margin-left':'10%',
@@ -304,16 +314,10 @@ def get_artist_uri(n_clicks, token, artist):
 #     # return(searchResults)
 #     return(data)
 
-# start user playback function
-# @app.callback(
-#     Output('song_uris', 'children'),
-#     [Input('submit_button', 'n_clicks')],
-# )
-# def user_devices(n_clicks):
-
 # Recommendation callback
 @app.callback(
-    Output('table', 'children'),
+    [Output('table', 'children'),
+     Output('song_uris', 'children')],
     [Input('submit_button', 'n_clicks')],
     [State('spotify_data', 'children'),
      State('artist_uri', 'children'),
@@ -343,6 +347,7 @@ def populate_table(n_clicks, token, artist_uris, popularity, tempo, energy, danc
                                                limit=2)
 
     data = []
+    song_uris = []
 
     for result in searchResults['tracks']:
         data_dict = {
@@ -352,7 +357,8 @@ def populate_table(n_clicks, token, artist_uris, popularity, tempo, energy, danc
             "Link to Album Art": result['album']['images'][2]['url'],
         }
         data.append(data_dict)
-    
+        song_uris.append(result['uri'][15:])
+
     df = pd.DataFrame.from_dict(data)
     rows = []
     for i in range(len(df)):
@@ -376,7 +382,25 @@ def populate_table(n_clicks, token, artist_uris, popularity, tempo, energy, danc
 
         # Body
         rows
-    )
+    ), song_uris
+
+# Get list of usable devices:
+@app.callback(
+    [Output('devices', 'style'),
+     Output('devices', 'options')],
+    [Input('play_button', 'n_clicks')],
+    [State('spotify_data', 'children')],
+)
+def get_devices(n_clicks, token):
+    # read in the object metadata
+    spotifyObj = spotipy.Spotify(auth=token)
+
+    # get devices
+    devices = spotifyObj.devices()
+
+    device_list = [{'label': device['name'], 'value': device['name']} for device in devices['devices']]
+
+    return {'display': 'block'}, list(device_list)
 
 if __name__ == '__main__':
     app.run_server(debug=True)
