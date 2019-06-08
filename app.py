@@ -39,6 +39,12 @@ app.layout = html.Div(children=[
                     'margin':'2%',
                 }
             ),
+            html.Button(id='play_button_2', 
+                children="Play Music",
+                style={
+                    'margin':'2%',
+                }
+            ),
             dcc.Dropdown(id="devices")#, style={'display': 'none'}),
         ]),
         html.Div([
@@ -133,7 +139,7 @@ app.layout = html.Div(children=[
     html.Div(id='spotify_data', style={'display': 'none'}),
     html.Div(id='artist_uri', style={'display': 'none'}),
     html.Div(id='song_uris', style={'display':'none'}),
-    # html.Div(id='devices', style={'display':'none'}),
+    html.Div(id='devices2', style={'display':'none'}),
 
 
 ], style={
@@ -348,7 +354,7 @@ def populate_table(n_clicks, token, artist_uris, popularity, tempo, energy, danc
 
     data = []
     song_uris = []
-
+    
     for result in searchResults['tracks']:
         data_dict = {
             "Artist": [artist['name'] + ', ' if index is not len(result['artists'])-1 else artist['name']for index, artist in enumerate(result['artists']) ],
@@ -357,7 +363,7 @@ def populate_table(n_clicks, token, artist_uris, popularity, tempo, energy, danc
             "Link to Album Art": result['album']['images'][2]['url'],
         }
         data.append(data_dict)
-        song_uris.append(result['uri'][15:])
+        song_uris.append(result['uri'])#[14:])
 
     df = pd.DataFrame.from_dict(data)
     rows = []
@@ -397,10 +403,29 @@ def get_devices(n_clicks, token):
 
     # get devices
     devices = spotifyObj.devices()
-
-    device_list = [{'label': device['name'], 'value': device['name']} for device in devices['devices']]
+    
+    device_list = [{'label': device['name'], 'value': device['id']} for device in devices['devices']]
 
     return {'display': 'block'}, list(device_list)
+
+# start playing music on chosen device
+@app.callback(
+    [Output('devices2', 'children')], # placeholder
+    [Input('play_button_2', 'n_clicks')],
+    [State('spotify_data', 'children'), 
+     State('devices', 'value'),
+     State('song_uris', 'children')]
+)
+def play_music(n_clicks, token, device, uris):
+    # read in the object metadata
+    spotifyObj = spotipy.Spotify(auth=token)
+
+    print(uris)
+    spotifyObj.start_playback(device_id=device, uris=uris)
+
+
+# TODO:
+# user_playlist_create
 
 if __name__ == '__main__':
     app.run_server(debug=True)
