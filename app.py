@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import dash
+import dash_table
 import dash_core_components as dcc 
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
@@ -60,6 +61,12 @@ home_layout = html.Div([
         ),
     ]),
     html.Br(),
+    html.Div(id='table_container', children=[
+        dash_table.DataTable(
+            id='playlist_table',
+            columns=[{"name":i, "id":i} for i in ['Playlist Name', 'Playlist ID', 'Number of Tracks']],
+        ),
+    ]),
     html.Button(children=[dcc.Link('Log in', href='/login')]),
 ])
 
@@ -195,9 +202,10 @@ def authenticate(n_clicks, username):
         print()
         return None, auth.get_authorize_url()
 
-# Callback to test authentication
+# Callback to display user playlists
 @app.callback(
-    [Output(component_id='dummy', component_property='children')],
+    [Output('table_container', 'style'),
+     Output('playlist_table', 'data')],
     [Input('query_button', 'n_clicks')],
 )
 def query(n_clicks):
@@ -209,20 +217,9 @@ def query(n_clicks):
     if n_clicks:
         sp = spotipy.Spotify(auth=token)
         playlists = sp.user_playlists(user_id)
-        print(playlists)
-        # for playlist in playlists['items']:
-        #     if playlist['owner']['id'] == user_id:
-        #         print()
-        #         print(playlist['name'])
-        #         print('  total tracks', playlist['tracks']['total'])
-        #         results = sp.user_playlist(user_id, playlist['id'],
-        #             fields="tracks,next")
-        #         tracks = results['tracks']
-        #         show_tracks(tracks)
-        #         while tracks['next']:
-        #             tracks = sp.next(tracks)
-        #             show_tracks(tracks)
-    return ['']
+
+        data = [{'Playlist Name': pl['name'], 'Playlist ID': pl['id'], 'Number of Tracks':pl['tracks']['total']}for pl in playlists['items']]
+    return None, data
 
 if __name__ == '__main__':
     app.run_server(debug=True) 
