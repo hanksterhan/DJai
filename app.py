@@ -10,6 +10,7 @@ import spotipy.util as util
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 import os, ast
+import json
 
 external_stylesheets = ['https://codepen.io/chirddyp/pen/dZVMbK.css']
 
@@ -57,16 +58,81 @@ home_layout = html.Div([
     html.H1('Welcome to DJai'),
     html.Div(id='home_content', children=[
         html.Button(id='query_button',
-                    children='Query'
+                    children='Playlist Builder'
         ),
     ]),
     html.Br(),
-    html.Div(id='table_container', children=[
-        dash_table.DataTable(
-            id='playlist_table',
-            columns=[{"name":i, "id":i} for i in ['Playlist Name', 'Playlist ID', 'Number of Tracks']],
-        ),
+    dcc.Tabs([
+        dcc.Tab(label='Playlists', children=[
+            html.Div(id='playlist_container', style={'display':'none'}, children=[
+                dash_table.DataTable(
+                    id='playlist_table',
+                    columns=[{"name":i, "id":i} for i in ['Playlist Name', 'Playlist ID', 'Number of Tracks']],
+                    row_selectable='single',
+                    sort_action='native',
+                    hidden_columns=['Playlist ID'],
+                    style_data={
+                        'whiteSpace':'normal',
+                        'height':'auto'
+                    },
+                    style_as_list_view=True,
+                    style_cell_conditional=[
+                        {
+                            'textAlign': 'center',
+                        }
+                    ],
+                    style_data_conditional=[
+                        {
+                            'if': {'row_index': 'odd'}, 
+                            'backgroundColor':'rgb(230, 230, 230)'
+                        
+                        }
+                    ],
+                    style_header={
+                        'backgroundColor': 'rgb(230, 230, 230)',
+                        'fontWeight': 'bold'
+                    }
+                ),
+                html.Br(),
+                html.Button(id='click_playlist', children='Select Playlist')
+            ]),
+        ]),
+        dcc.Tab(id='songs', label='Songs', children=[
+            html.Div(id='song_container',  children=[
+                dash_table.DataTable(
+                    id='song_table',
+                    columns=[{"name":i, "id":i} for i in ['Track Name', 'Track URI', 'Artists', 'Album', 'Link to Spotify']],
+                    row_selectable='single',
+                    sort_action='native',
+                    hidden_columns=['Track URI'],
+                    style_data={
+                        'whiteSpace':'normal',
+                        'height':'auto'
+                    },
+                    style_as_list_view=True,
+                    style_cell_conditional=[
+                        {
+                            'textAlign': 'center',
+                        }
+                    ],
+                    style_data_conditional=[
+                        {
+                            'if': {'row_index': 'odd'}, 
+                            'backgroundColor':'rgb(230, 230, 230)'
+                        
+                        }
+                    ],
+                    style_header={
+                        'backgroundColor': 'rgb(230, 230, 230)',
+                        'fontWeight': 'bold'
+                    }
+                ),
+                html.Br(),
+                # html.Button(id='click_playlist', children='Select Playlist')
+            ]),
+        ]),
     ]),
+    
     html.Button(children=[dcc.Link('Log in', href='/login')]),
 ])
 
@@ -81,11 +147,6 @@ app.layout = html.Div([
 ####################################################
 ## Helper functions
 ####################################################
-def show_tracks(tracks):
-    for i, item in enumerate(tracks['items']):
-        track = item['track']
-        print("   %d %32.32s %s" % (i, track['artists'][0]['name'], track['name']))
-
 def get_user_id():
     """ returns the user's Spotify user id
     """
@@ -126,7 +187,6 @@ def get_token():
      Input('url', 'href')]
 )
 def display_page(pathname, fullpath):
-    print('path', pathname)
     if pathname == '/login':
         return login_layout
     elif pathname == '/':
@@ -148,16 +208,14 @@ def display_page(pathname, fullpath):
                         cache_path=f".cache-{user_id}",
                         scope="user-library-read")
 
-            print('full path: ', fullpath)
-            print()
             code = auth.parse_response_code(fullpath)
+
+            # authenticate and get the access token
             try:
-                # this is when the cache is read
+                # this is when the cache is written
                 token = auth.get_access_token(code)
-                print("token: ", token)
                 return home_layout
             except spotipy.oauth2.SpotifyOauthError as e:
-                print('error raise: ', e)
                 return home_layout
             
         return index_page
@@ -198,19 +256,15 @@ def authenticate(n_clicks, username):
                     'http://localhost:8050/callback', 
                     cache_path=f".cache-{user_id}",
                     scope="user-library-read")
-        print('url', auth.get_authorize_url())
-        print()
         return None, auth.get_authorize_url()
 
 # Callback to display user playlists
 @app.callback(
-    [Output('table_container', 'style'),
+    [Output('playlist_container', 'style'),
      Output('playlist_table', 'data')],
     [Input('query_button', 'n_clicks')],
 )
 def query(n_clicks):
-    print("got here in: ", n_clicks)
-
     token = get_token()
     user_id = get_user_id()
 
@@ -220,6 +274,36 @@ def query(n_clicks):
 
         data = [{'Playlist Name': pl['name'], 'Playlist ID': pl['id'], 'Number of Tracks':pl['tracks']['total']}for pl in playlists['items']]
     return None, data
+
+# Callback to dial into a specific user playlist
+@app.callback(
+    [Output('songs', 'label'),
+     Output('song_container', 'style'),
+     Output('song_table', 'data')],
+    [Input('click_playlist', 'n_clicks')],
+    [State('playlist_table', 'selected_rows'),
+     State('playlist_table', 'data')],
+)
+def select_playlist(n_clicks, active_row, data):
+    token = get_token()
+    user_id = get_user_id()
+
+    sp = spotipy.Spotify(auth=token)
+    plid = data[active_row[0]]['Playlist ID']
+
+    tracks = sp.user_playlist(user_id, plid)
+
+    playlist_data = [
+        {
+            'Track Name': track['track']['name'], 
+            'Track URI': track['track']['uri'], 
+            'Artists': [artist['name'] for artist in track['track']['album']['artists']], 
+            'Album': track['track']['album']['name'], 
+            'Link to Spotify': track['track']['external_urls'].get('spotify', 'No link')
+        } for track in tracks['tracks']['items']
+    ]
+
+    return "'" + data[active_row[0]]['Playlist Name'] + "'" + ' Songs', None, playlist_data
 
 if __name__ == '__main__':
     app.run_server(debug=True) 
