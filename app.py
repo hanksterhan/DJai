@@ -291,7 +291,7 @@ def select_playlist(n_clicks, active_row, data):
     sp = spotipy.Spotify(auth=token)
     plid = data[active_row[0]]['Playlist ID']
 
-    tracks = sp.user_playlist(user_id, plid)
+    tracks = sp.user_playlist(user_id, plid, fields=['tracks.items(track(name, uri,album(artists,name),external_urls))'])
 
     playlist_data = [
         {
