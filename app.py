@@ -135,21 +135,61 @@ home_layout = html.Div([
                         'backgroundColor': 'rgb(230, 230, 230)',
                         'fontWeight': 'bold'
                     },
-                    virtualization=True,
+                    # virtualization=True,
                 ),
                 html.Br(),
             ]),
         ]),
         dcc.Tab(id='songs', label='Songs', children=[
-            html.Div(id='song_container',  children=[
-                dash_table.DataTable(
-                    id='song_table',
-                    columns=[
-                        {'name':i, 'id':i} for i in ['Track Name', 'Track URI', 'Artists', 'Album', 'Link to Spotify']
-                    ],
-                    sort_action='native',
-                    hidden_columns=['Track URI'],
-                    style_data={
+            dash_table.DataTable(
+                id='song_table',
+                columns=[
+                    {'name':i, 'id':i} for i in ['Track Name', 'Track URI', 'Artists', 'Album', 'Link to Spotify']
+                ],
+                sort_action='native',
+                hidden_columns=['Track URI'],
+                style_data={
+                    'whiteSpace':'normal',
+                    'height':'auto',
+                    'width': '50px'
+                },
+                style_cell={
+                    'whiteSpace': 'normal'
+                },
+                fixed_rows={
+                    'headers': True,
+                    'data': 0
+                },
+                style_cell_conditional=[
+                    {
+                        'textAlign': 'center',
+                    },
+                ],
+                style_data_conditional=[
+                    {
+                        'if': {'row_index': 'odd'}, 
+                        'backgroundColor':'rgb(230, 230, 230)'
+
+                    },
+                ],
+                style_header={
+                    'backgroundColor': 'rgb(230, 230, 230)',
+                    'fontWeight': 'bold'
+                },
+                # virtualization=True,
+                page_action='none'
+            ),
+            html.Br(),
+        ]),
+        dcc.Tab(id='advanced', label='Advanced', children=[
+            dash_table.DataTable(
+                id='advanced_table',
+                columns=[
+                    {'name':i, 'id':i} for i in ['Track Name', 'Artist', 'Track URI', 'Key', 'Tempo', 'Energy', 'Loudness', 'Instrumentalness']
+                ],
+                sort_action='native',
+                hidden_columns=['Track URI'],
+                style_data={
                         'whiteSpace':'normal',
                         'height':'auto',
                         'width': '50px'
@@ -177,15 +217,14 @@ home_layout = html.Div([
                         'backgroundColor': 'rgb(230, 230, 230)',
                         'fontWeight': 'bold'
                     },
-                    virtualization=True,
+                    # virtualization=True,
                     page_action='none'
-                ),
-                html.Br(),
-            ]),
-        ]),
+            )
+        ])
     ]),
     
     html.Button(children=[dcc.Link('Log in', href='/login')]),
+    html.Div(id='track_URIs', style={'display':'none'}),
 ])
 
 app.layout = html.Div([
@@ -254,8 +293,6 @@ def display_page(pathname, fullpath):
 )
 def authenticate(n_clicks, username): 
     if n_clicks:
-        print('authenticating, try # ', n_clicks)
-        
         # add spotify username to .env file if it's not already there
         if not os.getenv('SPOTIFY_USERNAME'):
             f = open('.env', 'a')
@@ -283,8 +320,8 @@ def authenticate(n_clicks, username):
 # Callback to dial into a specific user playlist
 @app.callback(
     [Output('songs', 'label'),
-     Output('song_container', 'style'),
-     Output('song_table', 'data')],
+     Output('song_table', 'data'),
+     Output('track_URIs', 'children')],
     [Input('playlist_table', 'selected_rows'),
      Input('playlist_table', 'data')]
 )
@@ -308,6 +345,7 @@ def select_playlist(active_row, data):
                 'Link to Spotify': track['track']['external_urls'].get('spotify', 'No link')
             } for track in tracks['items']
         ]
+        URIs = [{'Track Name':track['track']['name'], 'Artist':[artist['name'] for artist in track['track']['album']['artists']], 'Track URI': track['track']['uri']} for track in tracks['items']]
 
         # if the playlist is longer than 100 songs, get the rest of the tracks: 
         offset=100
@@ -323,12 +361,101 @@ def select_playlist(active_row, data):
                 } for track in tracks['items']
             ]   
             offset += 100
-        
+            URIs += [{'Track Name':track['track']['name'], 'Artist':[artist['name'] for artist in track['track']['album']['artists']], 'Track URI': track['track']['uri']} for track in tracks['items']]
         # update the label of the second tab, make it visible, and return the tracks to populate the data table
-        return "'" + data[active_row[0]]['Playlist Name'] + "'" + ' Songs', None, playlist_data
+        return "'" + data[active_row[0]]['Playlist Name'] + "'" + ' Songs', playlist_data, json.dumps(URIs)
     
     # otherwise do essentially nothing:
-    return 'Songs', None, [{'Track Name': 'Select a Playlist','Track URI': '','Artists': '','Album': '', 'Link to Spotify': '',}]
+    return 'Songs',[{'Track Name': 'Select a Playlist','Track URI': '','Artists': '','Album': '', 'Link to Spotify': '',}], []
+
+# callback to populate the advanced tab
+# activated when a playlist is selected
+@app.callback(
+    [Output('advanced_table', 'data')],
+    [Input('playlist_table', 'selected_rows'),
+     Input('track_URIs', 'children')]
+)
+def get_advanced_track_data(active_row, advanced_data):
+    token = get_token()
+    user_id = get_user_id()
+    sp = spotipy.Spotify(auth=token)
+
+    song_counter = 0 # counter to keep track of how many songs have been queried
+
+    # dictionary mapping 0-11 to the musical keys of C, C#, ... B
+    keys = {
+        0: 'C',
+        1: 'C#/Db',
+        2: 'D',
+        3: 'D#/Eb',
+        4: 'E',
+        5: 'F',
+        6: 'F#/Gb',
+        7: 'G',
+        8: 'G#/Ab',
+        9: 'A',
+        10: 'A#/Bb',
+        11: 'B'
+    }
+
+    # if a playlist is selected:
+    if active_row and advanced_data:
+        # convert advanced data back into original format:
+        advanced_data = json.loads(advanced_data)
+        
+        song_counter = 0 # counter to keep track of how many songs have been queried
+
+        # if the track is local, populate with none type, otherwise query for audio features based on track URI
+        track_data = sp.audio_features([track.get('Track URI', None) if 'local' not in track.get('Track URI', None) else "" for track in advanced_data[:50]])
+
+        for track in track_data:
+            if track:
+                advanced_data[song_counter]['Key'] = keys[track['key']]
+                advanced_data[song_counter]['Tempo'] = track['tempo']
+                advanced_data[song_counter]['Energy'] = track['energy']
+                advanced_data[song_counter]['Loudness'] = track['loudness']
+                advanced_data[song_counter]['Instrumentalness'] = track['instrumentalness']
+                song_counter += 1
+            else:
+                advanced_data[song_counter]['Artist'] = 'Local Song'
+                advanced_data[song_counter]['Key'] = '-'
+                advanced_data[song_counter]['Tempo'] = '-'
+                advanced_data[song_counter]['Energy'] = '-'
+                advanced_data[song_counter]['Loudness'] = '-'
+                advanced_data[song_counter]['Instrumentalness'] = '-'
+                song_counter += 1
+
+        while song_counter < len(advanced_data):
+            # if the track is local, populate with none type, otherwise query for audio features based on track URI
+            track_data = sp.audio_features([track.get('Track URI', None) if 'local' not in track.get('Track URI', None) else "" for track in advanced_data[song_counter:song_counter+50]])
+
+            for track in track_data:
+                # check if local song
+                if track:
+                    advanced_data[song_counter]['Key'] = keys[track['key']]
+                    advanced_data[song_counter]['Tempo'] = track['tempo']
+                    advanced_data[song_counter]['Energy'] = track['energy']
+                    advanced_data[song_counter]['Loudness'] = track['loudness']
+                    advanced_data[song_counter]['Instrumentalness'] = track['instrumentalness']
+                    song_counter += 1
+                # if local song, populate with ''
+                else:
+                    advanced_data[song_counter]['Artist'] = 'Local Song'
+                    advanced_data[song_counter]['Key'] = '-'
+                    advanced_data[song_counter]['Tempo'] = '-'
+                    advanced_data[song_counter]['Energy'] = '-'
+                    advanced_data[song_counter]['Loudness'] = '-'
+                    advanced_data[song_counter]['Instrumentalness'] = '-'
+                    song_counter += 1
+        return [advanced_data] # not sure why it needs an extra set of []
+
+    return [[{'Track Name': 'Select a Playlist','Artist': '','Track URI': '','Key': '', 'Tempo': '', 'Energy':'','Loudness':'','Instrumentalness':''}]] # not sure why it needs an extra set of []
+
+
+
+
+    
+
 
 if __name__ == '__main__':
     app.run_server(debug=True) 
