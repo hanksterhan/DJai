@@ -38,13 +38,13 @@ def get_token():
     client_secret = os.getenv("CLIENT_SECRET")
     user_id = os.getenv("SPOTIFY_USERNAME")
 
-    scope = 'user-read-private user-read-playback-state user-modify-playback-state'
+    scope = 'user-read-private user-read-playback-state user-modify-playback-state user-top-read user-library-read playlist-modify-public playlist-modify-private'
 
     auth = SpotifyOAuth(client_id, 
                 client_secret, 
                 'http://localhost:8050/callback', 
                 cache_path=f".cache-{user_id}",
-                scope="user-library-read")
+                scope=scope)
 
     if auth._is_token_expired(auth.get_cached_token()):
         return auth.refresh_access_token(auth.get_cached_token()['refresh_token'])['access_token']
@@ -61,6 +61,14 @@ def get_playlists():
     data = [{'Playlist Name': pl['name'], 'Playlist ID': pl['id'], 'Number of Tracks':pl['tracks']['total']}for pl in playlists['items']]
     return data
 
+# given a list, checks that all the values are ascending
+# returns False if not
+def is_ascending(inds):
+    for i in range(len(inds)-1):
+        if inds[i] - inds[i+1] > 0:
+            return False
+    return True
+    
 ####################################################
 ## Multi Page Layout
 ####################################################
@@ -141,6 +149,7 @@ home_layout = html.Div([
             ]),
         ]),
         dcc.Tab(id='songs', label='Songs', children=[
+            html.Button(id='reorder_songs', children='Reorder playlist to displayed order:'),
             dash_table.DataTable(
                 id='song_table',
                 columns=[
@@ -182,6 +191,7 @@ home_layout = html.Div([
             html.Br(),
         ]),
         dcc.Tab(id='advanced', label='Advanced', children=[
+            html.Button(id='reorder_advanced', children='Reorder playlist to displayed order:'),
             dash_table.DataTable(
                 id='advanced_table',
                 columns=[
@@ -233,6 +243,8 @@ app.layout = html.Div([
 
     # hidden divs
     html.Div(id='dummy', style={'display':'none'}),
+    html.Div(id='playlist_order', style={'display':'none'}), # for reorder playlist from song tab
+    html.Div(id='playlist_order_advanced', style={'display':'none'}), # for reorder playlist from advanced tab
 ])
 
 ####################################################
@@ -259,13 +271,13 @@ def display_page(pathname, fullpath):
             client_secret = os.getenv("CLIENT_SECRET")
             user_id = os.getenv("SPOTIFY_USERNAME")
 
-            scope = 'user-read-private user-read-playback-state user-modify-playback-state'
+            scope = 'user-read-private user-read-playback-state user-modify-playback-state user-top-read user-library-read playlist-modify-public playlist-modify-private'
 
             auth = SpotifyOAuth(client_id, 
                         client_secret, 
                         'http://localhost:8050/callback', 
                         cache_path=f".cache-{user_id}",
-                        scope="user-library-read")
+                        scope=scope)
 
             code = auth.parse_response_code(fullpath)
 
@@ -306,13 +318,13 @@ def authenticate(n_clicks, username):
         client_secret = os.getenv("CLIENT_SECRET")
         user_id = os.getenv("SPOTIFY_USERNAME")
 
-        scope = 'user-read-private user-read-playback-state user-modify-playback-state'
+        scope = 'user-read-private user-read-playback-state user-modify-playback-state user-top-read user-library-read playlist-modify-public playlist-modify-private'
 
         auth = SpotifyOAuth(client_id, 
                     client_secret, 
                     'http://localhost:8050/callback', 
                     cache_path=f".cache-{user_id}",
-                    scope="user-library-read")
+                    scope=scope)
         return None, auth.get_authorize_url()
 
 
@@ -451,10 +463,72 @@ def get_advanced_track_data(active_row, advanced_data):
 
     return [[{'Track Name': 'Select a Playlist','Artist': '','Track URI': '','Key': '', 'Tempo': '', 'Energy':'','Loudness':'','Instrumentalness':''}]] # not sure why it needs an extra set of []
 
-
-
-
+# callback to change order of the playlist based on basic song information
+# activated when the reorder button is pressed on the song table tab
+@app.callback(
+    [Output('playlist_order', 'children')],
+    [Input('reorder_songs', 'n_clicks')],
+    [State('playlist_table', 'selected_rows'),
+     State('playlist_table', 'data'),
+     State('song_table', 'derived_viewport_indices')],
+)
+def reorder_playlist(n_clicks, active_row, data, row_ids):
+    token = get_token()
+    user_id = get_user_id()
+    sp = spotipy.Spotify(auth=token)
     
+    # if a playlist is selected
+    if active_row and not is_ascending(row_ids):
+        plid = data[active_row[0]]['Playlist ID'] # get playlist id
+        current_order = [ind for ind, _ in enumerate(row_ids)]
+        
+        for ind, des_ind in enumerate(row_ids):
+            # ind is where the song will end up
+            # des_ind is where the song is in the original order
+            # real_ind is where the song currently is 
+            real_ind = current_order.index(des_ind)
+            current_order.pop(real_ind)
+            current_order.insert(ind, des_ind)
+            sp.user_playlist_reorder_tracks(user = user_id,
+                                            playlist_id = plid, 
+                                            range_start = real_ind, 
+                                            insert_before = ind)
+    return [""]
+
+# callback to change order of the playlist based on advanced song information
+# activated when the reorder button is pressed on the advanced table tab
+@app.callback(
+    [Output('playlist_order_advanced', 'children')],
+    [Input('reorder_advanced', 'n_clicks')],
+    [State('playlist_table', 'selected_rows'),
+     State('playlist_table', 'data'),
+     State('advanced_table', 'derived_viewport_indices')],
+)
+def reorder_playlist_advanced(n_clicks, active_row, data, row_ids):
+    token = get_token()
+    user_id = get_user_id()
+    sp = spotipy.Spotify(auth=token)
+    
+    # if a playlist is selected
+    if active_row and not is_ascending(row_ids):
+        plid = data[active_row[0]]['Playlist ID'] # get playlist id
+        current_order = [ind for ind, _ in enumerate(row_ids)]
+        
+        for ind, des_ind in enumerate(row_ids):
+            # ind is where the song will end up
+            # des_ind is where the song is in the original order
+            # real_ind is where the song currently is 
+            real_ind = current_order.index(des_ind)
+            current_order.pop(real_ind)
+            current_order.insert(ind, des_ind)
+            sp.user_playlist_reorder_tracks(user = user_id,
+                                            playlist_id = plid, 
+                                            range_start = real_ind, 
+                                            insert_before = ind)
+    return [""]
+
+## next: swap the order of two songs
+
 
 
 if __name__ == '__main__':
