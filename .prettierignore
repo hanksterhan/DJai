@@ -1,0 +1,8 @@
+common/node_modules
+server/node_modules
+web/node_modules
+common/dist
+server/dist
+web/dist
+server/data
+web/plop/templates

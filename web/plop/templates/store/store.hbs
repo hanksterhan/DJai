@@ -1,0 +1,19 @@
+import { action, makeObservable, observable } from "mobx";
+
+export class {{>pascalName}} {
+  constructor() {
+    makeObservable(this);
+  }
+
+  @observable
+  observedField: string = "";
+
+  @action
+  setobservedField(value: string) {
+    this.observedField = value;
+  }
+
+  get getobservedField() {
+    return this.observedField;
+  }
+}

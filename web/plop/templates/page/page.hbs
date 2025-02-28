@@ -1,0 +1,31 @@
+import { html } from "lit";
+import { styles } from "./styles.css";
+import { customElement, property } from "lit/decorators.js";
+import { MobxLitElement } from "@adobe/lit-mobx";
+
+import "../index";
+import "../../components/index";
+
+@customElement("{{>tagName}}")
+export class {{>pascalName}} extends MobxLitElement {
+  static readonly TAG_NAME = "{{>tagName}}";
+  static get styles() {
+    return styles;
+  }
+
+  @property({ type: String })
+  placeholderProperty: string = "";
+
+  render() {
+    return html`
+        <h2>{{>pascalName}} page</h2>
+        <p>Welcome to the {{>pascalName}} page</p>
+    `;
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    [{{>pascalName}}.TAG_NAME]: {{>pascalName}};
+  }
+}

@@ -1,0 +1,16 @@
+import { httpClient } from "./fetch";
+import { /* TODO: Import your interfaces */ } from "@common/interfaces";
+
+enum {{>serviceNameUpper}}_ENDPOINTS {
+  {{>serviceNameUpper}}_HEALTH = "/{{>serviceNameLower}}/health"
+}
+
+export class {{>pascalName}} {
+  constructor() {}
+
+  async getHealth(): Promise<> {
+    const res = await httpClient.get({{>serviceNameUpper}}_ENDPOINTS.{{>serviceNameUpper}}_HEALTH);
+    console.log(JSON.stringify(res, null, 2));
+    return res;
+  }
+}
