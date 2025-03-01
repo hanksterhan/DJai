@@ -1,21 +1,21 @@
 import { AxiosRequestHeaders } from "axios";
 import ApiClient, { AUTH_TOKEN_TYPE } from "../ApiClient.js";
 
-import { yahooAuth } from "./yahooAuth.js";
+import { spotifyAuth } from "./spotifyAuth.js";
 
 const BASE_URL = "https://fantasysports.yahooapis.com/fantasy/v2";
 class Yahoo {
     private accessToken: string = "";
 
-    private yahooApiClient: ApiClient;
+    private spotifyApiClient: ApiClient;
 
     constructor() {
         this.accessToken = process.env.ACCESS_TOKEN || "";
 
-        this.yahooApiClient = new ApiClient(BASE_URL, {
+        this.spotifyApiClient = new ApiClient(BASE_URL, {
             "Content-Type": "application/x-www-form-urlencoded",
         } as AxiosRequestHeaders);
-        this.yahooApiClient.setAuthToken(
+        this.spotifyApiClient.setAuthToken(
             AUTH_TOKEN_TYPE.Bearer,
             this.accessToken
         );
@@ -25,8 +25,8 @@ class Yahoo {
      * Get or refresh access token from Yahoo and set it in the api client
      */
     async init(): Promise<void> {
-        this.accessToken = await yahooAuth.getAccessToken();
-        this.yahooApiClient.setAuthToken(
+        this.accessToken = await spotifyAuth.getAccessToken();
+        this.spotifyApiClient.setAuthToken(
             AUTH_TOKEN_TYPE.Bearer,
             this.accessToken
         );

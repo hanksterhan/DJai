@@ -1,2 +1,2 @@
-export * from "./yahooRouter";
+export * from "./spotifyRouter";
 export * from "./databaseRouter";
