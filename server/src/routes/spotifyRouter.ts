@@ -6,11 +6,10 @@ function createRouter(): IRouter {
 
     // Authentication endpoints
     router.get("/login", spotifyHandler.handleLogin);
-    router.get("/callback", spotifyHandler.handleCallback);
-
-    // Token management endpoints
+    router.post("/callback", spotifyHandler.handleCallback);
     router.get("/token", spotifyHandler.getAccessToken);
     router.get("/auth-status", spotifyHandler.getAuthStatus);
+    router.get("/playlists", spotifyHandler.getPlaylists);
 
     return router;
 }

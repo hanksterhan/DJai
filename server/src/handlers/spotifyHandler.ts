@@ -1,25 +1,25 @@
 import { Request, Response } from "express";
 import { spotifyAuth } from "../integrations/spotify/spotifyAuth";
+import { spotify } from "../integrations/spotify/spotify";
 
 class SpotifyHandler {
     /**
      * Initiates the Spotify OAuth flow
      */
     handleLogin = async (_req: Request, res: Response) => {
-        const composedAuthUrl = spotifyAuth.composeAuthUrl();
-        res.redirect(composedAuthUrl);
+        const authUrl = spotifyAuth.composeAuthUrl();
+        res.json({ data: { url: authUrl } });
     };
 
     /**
      * Handles the OAuth callback from Spotify
      */
     handleCallback = async (req: Request, res: Response) => {
-        const authCode = req.query.code as string;
-        const state = req.query.state as string;
+        const { code, state } = req.body;
 
         try {
-            await spotifyAuth.requestAccessToken(authCode, state);
-            res.redirect("/"); // Redirect to frontend after successful auth
+            await spotifyAuth.requestAccessToken(code, state);
+            res.json({ data: { success: true } });
         } catch (error) {
             console.error("Authentication callback failed:", error);
             res.status(500).json({ error: "Authentication failed" });
@@ -32,7 +32,7 @@ class SpotifyHandler {
     getAccessToken = async (_req: Request, res: Response) => {
         try {
             const token = await spotifyAuth.getAccessToken();
-            res.json({ access_token: token });
+            res.json({ data: { access_token: token } });
         } catch (error) {
             console.error("Failed to get access token:", error);
             res.status(500).json({ error: "Failed to get access token" });
@@ -45,10 +45,25 @@ class SpotifyHandler {
     getAuthStatus = async (_req: Request, res: Response) => {
         try {
             const isAuthenticated = await spotifyAuth.isAuthenticated();
-            res.json({ isAuthenticated });
+            res.json({ data: { isAuthenticated } });
         } catch (error) {
             console.error("Failed to get auth status:", error);
             res.status(500).json({ error: "Failed to get auth status" });
+        }
+    };
+
+    /**
+     * Gets the current user's playlists
+     */
+    getPlaylists = async (_req: Request, res: Response) => {
+        try {
+            const token = await spotifyAuth.getAccessToken();
+            await spotify.setAccessToken(token);
+            const playlists = await spotify.getUserPlaylists();
+            res.json({ data: playlists });
+        } catch (error) {
+            console.error("Failed to get playlists:", error);
+            res.status(500).json({ error: "Failed to get playlists" });
         }
     };
 }

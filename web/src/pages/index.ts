@@ -1,3 +1,4 @@
 export * from "./AppRoot";
-export * from "./TeamsPage";
+export * from "./Home";
+export * from "./Callback";
 // PLOP: APPEND PAGE EXPORTS

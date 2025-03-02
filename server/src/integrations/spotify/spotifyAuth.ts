@@ -1,10 +1,24 @@
 import { AxiosRequestHeaders } from "axios";
 import ApiClient, { AUTH_TOKEN_TYPE } from "../ApiClient.js";
 import { generateRandomString } from "../../utils/random";
+import dotenv from "dotenv";
+import path from "path";
 
-// import fs from "fs";
-// import path from "path";
-// import dotenv from "dotenv";
+// Load environment variables
+dotenv.config({ path: path.resolve(__dirname, "../../../../.env") });
+
+// Validate required environment variables
+const requiredEnvVars = [
+    "SPOTIFY_CLIENT_ID",
+    "SPOTIFY_CLIENT_SECRET",
+    "SPOTIFY_REDIRECT_URI",
+] as const;
+
+for (const envVar of requiredEnvVars) {
+    if (!process.env[envVar]) {
+        throw new Error(`${envVar} is required in environment variables`);
+    }
+}
 
 interface OAuthTokenResponse {
     access_token: string;
@@ -18,11 +32,11 @@ const SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize?";
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 
 class SpotifyAuth {
-    private accessToken: string;
+    private accessToken: string = "";
     private refreshToken: string = "";
-    private clientId: string = process.env.SPOTIFY_CLIENT_ID || "";
-    private clientSecret: string = process.env.SPOTIFY_CLIENT_SECRET || "";
-    private redirectUri: string = process.env.SPOTIFY_REDIRECT_URI || "";
+    private clientId: string;
+    private clientSecret: string;
+    private redirectUri: string;
     private state: string = "";
     private tokenExpiration: Date = new Date();
 
@@ -30,13 +44,13 @@ class SpotifyAuth {
 
     /**
      * Initializes the Spotify authentication client
-     * @throws Error if AUTH_TOKEN environment variable is not set
+     * @throws Error if required environment variables are not set
      */
     constructor() {
-        this.accessToken = process.env.AUTH_TOKEN || "";
-        if (!this.accessToken) {
-            throw new Error("AUTH_TOKEN is required and must not be empty.");
-        }
+        // Initialize required values from environment
+        this.clientId = process.env.SPOTIFY_CLIENT_ID!;
+        this.clientSecret = process.env.SPOTIFY_CLIENT_SECRET!;
+        this.redirectUri = process.env.SPOTIFY_REDIRECT_URI!;
 
         // Initialize client with content-type header and basic auth
         this.spotifyAuthClient = new ApiClient(SPOTIFY_TOKEN_URL, {
@@ -58,16 +72,15 @@ class SpotifyAuth {
         this.state = generateRandomString(16);
         const scope = "user-read-private user-read-email";
 
-        return (
-            SPOTIFY_AUTH_URL +
-            JSON.stringify({
-                response_type: "code",
-                client_id: this.clientId,
-                scope,
-                redirect_uri: this.redirectUri,
-                state: this.state,
-            })
-        );
+        const params = new URLSearchParams({
+            response_type: "code",
+            client_id: this.clientId,
+            scope,
+            redirect_uri: this.redirectUri,
+            state: this.state,
+        });
+
+        return `${SPOTIFY_AUTH_URL}${params.toString()}`;
     }
 
     /**

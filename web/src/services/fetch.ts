@@ -1,21 +1,16 @@
-export class HttpClient {
-    private baseUrl: string;
-    private headers: HeadersInit;
+export abstract class BaseHttpClient {
+    protected abstract baseUrl: string;
+    protected headers: HeadersInit = {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+    };
 
-    constructor(baseUrl: string, headers?: HeadersInit) {
-        this.baseUrl = baseUrl;
-        this.headers = headers || {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-        };
-    }
-
-    private async request(
+    protected async request<T>(
         method: string,
-        url: string,
-        body?: any
-    ): Promise<any> {
-        const response = await fetch(`${this.baseUrl}${url}`, {
+        endpoint: string,
+        body?: unknown
+    ): Promise<T> {
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
             method,
             headers: this.headers,
             body: body ? JSON.stringify(body) : null,
@@ -29,21 +24,34 @@ export class HttpClient {
         return response.json();
     }
 
-    async get(url: string): Promise<any> {
-        return this.request("GET", url);
+    protected async get<T>(endpoint: string): Promise<T> {
+        return this.request<T>("GET", endpoint);
     }
 
-    async post(url: string, body: any): Promise<any> {
-        return this.request("POST", url, body);
+    protected async post<T>(endpoint: string, body: unknown): Promise<T> {
+        return this.request<T>("POST", endpoint, body);
     }
 
-    async put(url: string, body: any): Promise<any> {
-        return this.request("PUT", url, body);
+    protected async put<T>(endpoint: string, body: unknown): Promise<T> {
+        return this.request<T>("PUT", endpoint, body);
     }
 
-    async patch(url: string, body: any): Promise<any> {
-        return this.request("PATCH", url, body);
+    protected async patch<T>(endpoint: string, body: unknown): Promise<T> {
+        return this.request<T>("PATCH", endpoint, body);
+    }
+
+    protected async delete<T>(endpoint: string): Promise<T> {
+        return this.request<T>("DELETE", endpoint);
+    }
+
+    protected setHeader(key: string, value: string): void {
+        this.headers = {
+            ...this.headers,
+            [key]: value,
+        };
     }
 }
 
-export const httpClient = new HttpClient("http://localhost:3000");
+export abstract class ApiClient extends BaseHttpClient {
+    protected baseUrl = "http://localhost:3000";
+}

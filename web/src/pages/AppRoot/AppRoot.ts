@@ -17,23 +17,38 @@ export class AppRoot extends MobxLitElement {
     @property({ type: String })
     selectedPage: string = menuStore.selectedPage;
 
+    connectedCallback() {
+        super.connectedCallback();
+        this.handleRouting();
+    }
+
+    private handleRouting() {
+        // Check if we're on the callback path
+        if (window.location.pathname === "/callback") {
+            console.log("Setting page to callback");
+            menuStore.setSelectedPage("callback");
+        }
+    }
+
     render() {
+        console.log("Current selected page:", menuStore.selectedPage);
+
         return html`
             <sp-theme system="spectrum" color="light" scale="medium" dir="ltr">
-                <app-menu></app-menu>
+                ${menuStore.selectedPage !== "home" &&
+                menuStore.selectedPage !== "callback"
+                    ? html`<app-menu></app-menu>`
+                    : ""}
                 <div>
-                    ${menuStore.selectedPage === "teams"
+                    ${menuStore.selectedPage === "home"
+                        ? html`<home-page></home-page>`
+                        : ""}
+                    ${menuStore.selectedPage === "callback"
+                        ? html`<callback-page></callback-page>`
+                        : ""}
+                    <!-- ${menuStore.selectedPage === "teams"
                         ? html`<teams-page></teams-page>`
-                        : ""}
-                    ${menuStore.selectedPage === "leagues"
-                        ? html`<leagues-page></leagues-page>`
-                        : ""}
-                    ${menuStore.selectedPage === "nba"
-                        ? html`<fantasy-basketball></fantasy-basketball>`
-                        : ""}
-                    ${menuStore.selectedPage === "nfl"
-                        ? html`<fantasy-football></fantasy-football>`
-                        : ""}
+                        : ""} -->
                 </div>
             </sp-theme>
         `;

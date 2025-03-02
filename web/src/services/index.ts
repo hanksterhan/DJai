@@ -1,7 +1,7 @@
-import { YahooService } from "./yahooService";
-import { SleeperService } from "./sleeperService";
+import { SpotifyAuthService } from "./spotifyAuthService";
+import { SpotifyService } from "./spotifyService";
 // PLOP: APPEND SERVICE IMPORTS
 
-export const yahooService = new YahooService();
-export const sleeperService = new SleeperService();
+export const spotifyAuthService = new SpotifyAuthService();
+export const spotifyService = new SpotifyService();
 // PLOP: APPEND SERVICE EXPORTS

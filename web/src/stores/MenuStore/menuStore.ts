@@ -6,10 +6,11 @@ export class MenuStore {
     }
 
     @observable
-    selectedPage: string = "teams";
+    selectedPage: string = "home";
 
     @action
     setSelectedPage(page: string) {
+        console.log("MenuStore: Setting page to", page);
         this.selectedPage = page;
     }
 
@@ -17,3 +18,5 @@ export class MenuStore {
         return this.selectedPage;
     }
 }
+
+export const menuStore = new MenuStore();

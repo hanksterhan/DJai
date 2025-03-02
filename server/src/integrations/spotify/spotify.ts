@@ -1,5 +1,6 @@
 import { AxiosRequestHeaders } from "axios";
 import ApiClient, { AUTH_TOKEN_TYPE } from "../ApiClient.js";
+import { SpotifyPlaylistsResponse } from "@common/interfaces";
 
 import { spotifyAuth } from "./spotifyAuth.js";
 
@@ -35,3 +36,29 @@ class Yahoo {
 
 export const yahoo = new Yahoo();
 yahoo.init();
+
+const SPOTIFY_API_URL = "https://api.spotify.com/v1";
+
+class Spotify {
+    private spotifyApiClient: ApiClient;
+
+    constructor() {
+        this.spotifyApiClient = new ApiClient(SPOTIFY_API_URL, {
+            "Content-Type": "application/json",
+        } as AxiosRequestHeaders);
+    }
+
+    async setAccessToken(token: string): Promise<void> {
+        this.spotifyApiClient.setAuthToken(AUTH_TOKEN_TYPE.Bearer, token);
+    }
+
+    async getUserPlaylists(): Promise<SpotifyPlaylistsResponse> {
+        const response =
+            await this.spotifyApiClient.get<SpotifyPlaylistsResponse>(
+                "/me/playlists"
+            );
+        return response.data;
+    }
+}
+
+export const spotify = new Spotify();
