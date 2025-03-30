@@ -40,6 +40,9 @@ export class PlatformTable extends MobxLitElement {
     @property({ type: Array })
     private previewRows: Row[] = [];
 
+    @property({ type: String })
+    selectedRowId: string | null = null;
+
     private _sort(event: CustomEvent) {
         const { sortDirection, sortKey } = event.detail;
 
@@ -124,6 +127,25 @@ export class PlatformTable extends MobxLitElement {
         // The actual reordering is handled in onDragEnd
     }
 
+    private handleRowClick(row: Row) {
+        // Remove selected class from previous row
+        const previousSelected = this.shadowRoot?.querySelector(".selected");
+        if (previousSelected) {
+            previousSelected.classList.remove("selected");
+        }
+
+        // Add selected class to clicked row
+        const clickedRow = this.shadowRoot?.querySelector(
+            `sp-table-row[value="${row.id}"]`
+        );
+        if (clickedRow) {
+            clickedRow.classList.add("selected");
+        }
+
+        this.selectedRowId = row.id;
+        this.handleOnClick(row);
+    }
+
     renderLoadingTable() {
         const headers: number[] = Array(this.loadingFormat.headers).fill(1);
         const rows: number[] = Array(this.loadingFormat.rows).fill(1);
@@ -179,13 +201,15 @@ export class PlatformTable extends MobxLitElement {
                     ${this.customRowStyles}
                 </style>
                 <sp-table-row
-                    @click=${() => this.handleOnClick(row)}
+                    @click=${() => this.handleRowClick(row)}
                     class="platform-row"
+                    value=${row.id}
                 >
                     ${this.data.headers.map((header: Header) => {
                         return html`<sp-table-cell
                             style=${styleMap({
                                 flex: header.flex ?? "1 1 0%",
+                                backgroundColor: "#2d2d2d",
                             })}
                             class=${row.cssClass ?? ""}
                         >
@@ -244,11 +268,12 @@ export class PlatformTable extends MobxLitElement {
                                     this.onDragOver(e, index)}
                                 @dragend=${this.onDragEnd}
                                 @drop=${this.onDrop}
-                                @click=${() => this.handleOnClick(row)}
+                                @click=${() => this.handleRowClick(row)}
+                                value=${row.id}
                             >
                                 ${this.data.headers.map(
-                                    (header: Header) =>
-                                        html` <sp-table-cell
+                                    (header: Header) => html`
+                                        <sp-table-cell
                                             style=${styleMap({
                                                 flex: header.flex ?? "1 1 0%",
                                                 backgroundColor: "#2d2d2d",
@@ -261,8 +286,9 @@ export class PlatformTable extends MobxLitElement {
                                                         cell?.header ===
                                                         header.id
                                                 )
-                                                ?.render()}</sp-table-cell
-                                        >`
+                                                ?.render()}
+                                        </sp-table-cell>
+                                    `
                                 )}
                             </sp-table-row>
                         `
