@@ -1,6 +1,9 @@
 import { AxiosRequestHeaders } from "axios";
 import ApiClient, { AUTH_TOKEN_TYPE } from "../ApiClient.js";
-import { SpotifyPlaylistsResponse } from "@common/interfaces";
+import {
+    SpotifyPlaylistsResponse,
+    SpotifyPlaylistTrackResponse,
+} from "@common/interfaces";
 
 import { spotifyAuth } from "./spotifyAuth.js";
 
@@ -52,10 +55,43 @@ class Spotify {
         this.spotifyApiClient.setAuthToken(AUTH_TOKEN_TYPE.Bearer, token);
     }
 
-    async getUserPlaylists(): Promise<SpotifyPlaylistsResponse> {
+    async getCurrentUserId(): Promise<string> {
+        const response = await this.spotifyApiClient.get<{ id: string }>("/me");
+        return response.data.id;
+    }
+
+    async getUserPlaylists(
+        limit: number = 20,
+        offset: number = 0
+    ): Promise<SpotifyPlaylistsResponse> {
+        const userId = await this.getCurrentUserId();
         const response =
             await this.spotifyApiClient.get<SpotifyPlaylistsResponse>(
-                "/me/playlists"
+                `/users/${userId}/playlists`,
+                {
+                    params: {
+                        limit,
+                        offset,
+                    },
+                }
+            );
+        return response.data;
+    }
+
+    async getPlaylistTracks(
+        playlistId: string,
+        offset = 0,
+        limit = 20
+    ): Promise<SpotifyPlaylistTrackResponse> {
+        const response =
+            await this.spotifyApiClient.get<SpotifyPlaylistTrackResponse>(
+                `/playlists/${playlistId}/tracks`,
+                {
+                    params: {
+                        offset,
+                        limit,
+                    },
+                }
             );
         return response.data;
     }

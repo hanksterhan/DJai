@@ -1,36 +1,37 @@
-import { html } from "lit";
+import { html, CSSResult, TemplateResult } from "lit";
 
-export type TableLoadingFormat = {
-    headers: number;
-    rows: number;
-};
-
-export type Header = {
+export interface Header {
     id: string;
     label: string;
-    flex?: string;
     sort?: string;
-};
+    flex?: string;
+}
 
-export type Cell = {
+export interface Cell {
     header: string;
-    value?: string;
-    render: () => TemplateResultOrNothing;
-};
+    value: string;
+    render: () => TemplateResult;
+}
 
-export type Row = {
-    rowId: number;
+export interface Row {
+    id: string;
     cells: Cell[];
     cssClass?: string;
-};
+}
 
-export type TableData = {
+export interface TableData {
     headers: Header[];
     rows: Row[];
-};
+}
 
-export const setFlex = (grow: number, shrink: number, basis: string) =>
-    `${grow} ${shrink} ${basis}`;
+export interface TableLoadingFormat {
+    headers: number;
+    rows: number;
+}
+
+export function setFlex(grow: number, shrink: number, basis: string): string {
+    return `${grow} ${shrink} ${basis}`;
+}
 
 export function generateHeader(
     label: string,
@@ -53,4 +54,11 @@ export function generateCell(header: string, value: string | number): Cell {
             return value === "N/A" ? html`&ndash;` : html`${value}`;
         },
     } as Cell;
+}
+
+export interface PlatformTableProps {
+    data: TableData;
+    isLoading: boolean;
+    handleOnClick?: (row: Row) => void | Promise<void>;
+    customStyles?: string | CSSResult;
 }

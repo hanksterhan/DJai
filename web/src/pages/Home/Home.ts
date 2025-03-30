@@ -2,8 +2,7 @@ import { html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { MobxLitElement } from "@adobe/lit-mobx";
 import { spotifyAuthService } from "../../services/spotifyAuthService";
-import { spotifyService } from "../../services/spotifyService";
-import { SpotifyPlaylist } from "@common/interfaces";
+import { playlistStore } from "../../stores/PlaylistStore/playlistStore";
 
 @customElement("home-page")
 export class Home extends MobxLitElement {
@@ -13,7 +12,10 @@ export class Home extends MobxLitElement {
     private isAuthenticated = false;
 
     @state()
-    private playlists: SpotifyPlaylist[] = [];
+    private isLoading = true;
+
+    @state()
+    private error: string | null = null;
 
     async connectedCallback() {
         super.connectedCallback();
@@ -29,55 +31,67 @@ export class Home extends MobxLitElement {
     }
 
     private async checkAuthStatus() {
-        const authStatus = await spotifyAuthService.getAuthStatus();
-        this.isAuthenticated = authStatus.isAuthenticated;
+        try {
+            this.isLoading = true;
+            this.error = null;
+            const authStatus = await spotifyAuthService.getAuthStatus();
+            this.isAuthenticated = authStatus.isAuthenticated;
+
+            if (this.isAuthenticated) {
+                // Load playlists if authenticated
+                await playlistStore.fetchPlaylists();
+            }
+        } catch (error) {
+            console.error("Failed to check auth status:", error);
+            this.isAuthenticated = false;
+            this.error =
+                error instanceof Error
+                    ? error.message
+                    : "Failed to check authentication status";
+        } finally {
+            this.isLoading = false;
+        }
     }
 
     private async handleLogin() {
         await spotifyAuthService.login();
     }
 
-    private async handleGetPlaylists() {
-        try {
-            const response = await spotifyService.getPlaylists();
-            this.playlists = response.items;
-        } catch (error) {
-            console.error("Failed to get playlists:", error);
-        }
-    }
-
     render() {
+        if (this.isLoading) {
+            return html`
+                <div class="home-container">
+                    <h1>Welcome to DJai</h1>
+                    <p>Loading...</p>
+                </div>
+            `;
+        }
+
+        if (this.error) {
+            return html`
+                <div class="home-container">
+                    <h1>Welcome to DJai</h1>
+                    <p class="error">${this.error}</p>
+                    <sp-button variant="primary" @click=${this.handleLogin}>
+                        Connect Spotify
+                    </sp-button>
+                </div>
+            `;
+        }
+
         return html`
             <div class="home-container">
                 <h1>Welcome to DJai</h1>
                 ${this.isAuthenticated
                     ? html`
                           <p>You're connected to Spotify!</p>
-                          <sp-button
-                              variant="primary"
-                              @click=${this.handleGetPlaylists}
-                          >
-                              Get My Playlists
-                          </sp-button>
-                          ${this.playlists.length > 0
-                              ? html`
-                                    <div class="playlists">
-                                        <h2>Your Playlists</h2>
-                                        <ul>
-                                            ${this.playlists.map(
-                                                (playlist) => html`
-                                                    <li>
-                                                        ${playlist.name}
-                                                        (${playlist.tracks
-                                                            .total}
-                                                        tracks)
-                                                    </li>
-                                                `
-                                            )}
-                                        </ul>
-                                    </div>
-                                `
-                              : ""}
+                          ${playlistStore.isLoading
+                              ? html`<p>Loading playlists...</p>`
+                              : playlistStore.error
+                                ? html`<p class="error">
+                                      ${playlistStore.error}
+                                  </p>`
+                                : html`<playlist-table></playlist-table>`}
                       `
                     : html`
                           <p>Connect your Spotify account to get started</p>

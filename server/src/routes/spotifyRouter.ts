@@ -11,6 +11,12 @@ function createRouter(): IRouter {
     router.get("/auth-status", spotifyHandler.getAuthStatus);
     router.get("/playlists", spotifyHandler.getPlaylists);
 
+    // Playlist endpoints
+    router.get(
+        "/playlists/:playlistId/tracks",
+        spotifyHandler.getPlaylistTracks
+    );
+
     return router;
 }
 

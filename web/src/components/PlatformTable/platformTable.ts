@@ -4,6 +4,7 @@ import { customElement, property } from "lit/decorators.js";
 import { styleMap } from "lit-html/directives/style-map.js";
 import { MobxLitElement } from "@adobe/lit-mobx";
 import { Header, Row, TableData, TableLoadingFormat } from "./tableInterfaces";
+import { CSSResult } from "lit";
 
 @customElement("platform-table")
 export class PlatformTable extends MobxLitElement {
@@ -13,13 +14,13 @@ export class PlatformTable extends MobxLitElement {
     }
 
     @property({ type: String })
-    customStyles: string = "";
+    customStyles: string | CSSResult = "";
 
     @property({ type: String })
     customRowStyles: string = "";
 
     @property()
-    handleOnClick = (row: Row) => {};
+    handleOnClick: (row: Row) => void | Promise<void> = () => {};
 
     @property({ type: Boolean })
     isLoading = false;

@@ -66,6 +66,30 @@ class SpotifyHandler {
             res.status(500).json({ error: "Failed to get playlists" });
         }
     };
+
+    /**
+     * Gets the tracks from a specific playlist
+     */
+    getPlaylistTracks = async (req: Request, res: Response) => {
+        try {
+            const { playlistId } = req.params;
+            const offset = parseInt(req.query.offset as string) || 0;
+            const limit = parseInt(req.query.limit as string) || 20;
+
+            const token = await spotifyAuth.getAccessToken();
+            await spotify.setAccessToken(token);
+
+            const tracks = await spotify.getPlaylistTracks(
+                playlistId,
+                offset,
+                limit
+            );
+            res.json({ data: tracks });
+        } catch (error) {
+            console.error("Failed to get playlist tracks:", error);
+            res.status(500).json({ error: "Failed to get playlist tracks" });
+        }
+    };
 }
 
 export const spotifyHandler = new SpotifyHandler();
