@@ -233,7 +233,6 @@ export class PlatformTable extends MobxLitElement {
                     ${this.customStyles}
                 </style>
                 <sp-table @sorted=${this._sort}>
-                    <sp-table-head>${headers}</sp-table-head>
                     <sp-table-body
                         >${this.renderLoadingTable()[1]}</sp-table-body
                     >
