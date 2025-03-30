@@ -9,6 +9,10 @@ export const styles = css`
         opacity: 0.5;
     }
 
+    .platform-row {
+        background-color: #2d2d2d; /* Dark gray background */
+    }
+
     sp-table-row {
         position: relative;
     }

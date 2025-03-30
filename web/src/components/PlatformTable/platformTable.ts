@@ -178,7 +178,10 @@ export class PlatformTable extends MobxLitElement {
                 <style>
                     ${this.customRowStyles}
                 </style>
-                <sp-table-row @click=${() => this.handleOnClick(row)}>
+                <sp-table-row
+                    @click=${() => this.handleOnClick(row)}
+                    class="platform-row"
+                >
                     ${this.data.headers.map((header: Header) => {
                         return html`<sp-table-cell
                             style=${styleMap({ flex: header.flex ?? "1 1 0%" })}
@@ -246,6 +249,7 @@ export class PlatformTable extends MobxLitElement {
                                         html` <sp-table-cell
                                             style=${styleMap({
                                                 flex: header.flex ?? "1 1 0%",
+                                                backgroundColor: "#2d2d2d",
                                             })}
                                             class=${row.cssClass ?? ""}
                                         >

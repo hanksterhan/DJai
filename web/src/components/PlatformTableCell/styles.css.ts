@@ -12,15 +12,13 @@ export const styles = css`
         animation-iteration-count: infinite;
         animation-name: shimmer;
         animation-timing-function: linear;
-        background: var(--spectrum-gray-200);
-        background: linear-gradient(
-            to right,
-            rgb(230, 230, 230) 8%,
-            rgb(213, 213, 213) 18%,
-            rgb(230, 230, 230) 33%
-        );
-        background-size: 1200px 100%;
-        display: inline-block;
+        background: #2d2d2d; /* Dark gray background */
+        color: #ffffff; /* White text */
+        display: block;
+        width: 100%;
+        height: 100%;
+        padding: 8px;
+        box-sizing: border-box;
     }
 
     @-webkit-keyframes shimmer {

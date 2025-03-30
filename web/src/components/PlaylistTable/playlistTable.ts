@@ -1,4 +1,4 @@
-import { html, css } from "lit";
+import { html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { MobxLitElement } from "@adobe/lit-mobx";
 import { playlistStore } from "../../stores/PlaylistStore/playlistStore";
@@ -220,22 +220,20 @@ export class PlaylistTable extends MobxLitElement {
                     .isLoading=${playlistStore.isLoading}
                     .handleOnClick=${(row: Row) =>
                         this.handlePlaylistClick(row)}
-                    .customStyles=${css`
-                        .selected {
-                            background: #e6e6e6;
-                        }
-                    `.toString()}
                 ></platform-table>
             </div>
             <div class="playlist-details">
                 ${selectedPlaylist
                     ? html`
-                          <h2>${selectedPlaylist.name}</h2>
-                          <p>${selectedPlaylist.description || ""}</p>
-                          <platform-table
-                              .data=${this.tracksTableData as TableData}
-                              .isLoading=${selectedPlaylist.isLoadingTracks}
-                          ></platform-table>
+                          <div class="playlist-table">
+                              <h2>${selectedPlaylist.name}</h2>
+                              <p>${selectedPlaylist.description || ""}</p>
+                              <platform-table
+                                  .data=${this.tracksTableData as TableData}
+                                  .isLoading=${selectedPlaylist.isLoadingTracks}
+                                  class="playlist-table"
+                              ></platform-table>
+                          </div>
                       `
                     : html` <p>Select a playlist to view its tracks</p> `}
             </div>

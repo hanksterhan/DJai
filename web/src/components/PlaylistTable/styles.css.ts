@@ -11,11 +11,18 @@ export const styles = css`
     .playlist-menu {
         width: 300px;
         border-right: 1px solid #ccc;
+        padding-right: 20px;
+        background-color: #4682b4; /* Steel blue background */
+        padding: 20px;
+        border-radius: 8px;
     }
 
-    .playlist-details {
-        flex: 1;
+    .playlist-table {
+        background-color: #4682b4; /* Steel blue background */
+        color: #ffffff; /* White text for better contrast */
         padding: 20px;
+        border-radius: 8px;
+        flex: 1;
     }
 
     .loading {
