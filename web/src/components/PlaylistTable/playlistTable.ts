@@ -222,18 +222,15 @@ export class PlaylistTable extends MobxLitElement {
                         this.handlePlaylistClick(row)}
                 ></platform-table>
             </div>
-            <div class="playlist-details">
+            <div class="playlist-table">
                 ${selectedPlaylist
                     ? html`
-                          <div class="playlist-table">
-                              <h2>${selectedPlaylist.name}</h2>
-                              <p>${selectedPlaylist.description || ""}</p>
-                              <platform-table
-                                  .data=${this.tracksTableData as TableData}
-                                  .isLoading=${selectedPlaylist.isLoadingTracks}
-                                  class="playlist-table"
-                              ></platform-table>
-                          </div>
+                          <h2>${selectedPlaylist.name}</h2>
+                          <p>${selectedPlaylist.description || ""}</p>
+                          <platform-table
+                              .data=${this.tracksTableData as TableData}
+                              .isLoading=${selectedPlaylist.isLoadingTracks}
+                          ></platform-table>
                       `
                     : html` <p>Select a playlist to view its tracks</p> `}
             </div>
