@@ -32,6 +32,6 @@ export const styles = css`
     }
 
     .loading-cell {
-        background-color: var(--spectrum-gray-100);
+        background-color: #2d2d2d;
     }
 `;

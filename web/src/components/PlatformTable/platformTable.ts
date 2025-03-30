@@ -139,7 +139,7 @@ export class PlatformTable extends MobxLitElement {
 
         const loadingRows = rows.map(
             (_value, index) => html`
-                <sp-table-row value=${`row${index}`}>
+                <sp-table-row value=${`row${index}`} class="platform-row">
                     ${headers.map(
                         () =>
                             html`<sp-table-cell class="loading-cell">
@@ -184,7 +184,9 @@ export class PlatformTable extends MobxLitElement {
                 >
                     ${this.data.headers.map((header: Header) => {
                         return html`<sp-table-cell
-                            style=${styleMap({ flex: header.flex ?? "1 1 0%" })}
+                            style=${styleMap({
+                                flex: header.flex ?? "1 1 0%",
+                            })}
                             class=${row.cssClass ?? ""}
                         >
                             ${row.cells
