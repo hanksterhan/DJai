@@ -3,6 +3,11 @@ export interface SpotifyPlaylist {
     name: string;
     description: string | null;
     public: boolean;
+    images: {
+        url: string;
+        height: number;
+        width: number;
+    }[];
     tracks: {
         total?: number;
     };

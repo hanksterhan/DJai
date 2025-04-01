@@ -4,8 +4,9 @@ import { customElement, property, state } from "lit/decorators.js";
 import { MobxLitElement } from "@adobe/lit-mobx";
 import { playlistStore } from "../../stores/PlaylistStore/playlistStore";
 import { TableData, Row, setFlex } from "../PlatformTable/tableInterfaces";
-import { PlaylistDetails } from "@common/interfaces";
+import { PlaylistDetails, SpotifyPlaylist } from "@common/interfaces";
 import { observe } from "mobx";
+import { styleMap } from "lit/directives/style-map.js";
 
 @customElement("playlist-menu")
 export class PlaylistMenu extends MobxLitElement {
@@ -27,13 +28,13 @@ export class PlaylistMenu extends MobxLitElement {
                 id: "name",
                 label: "Name",
                 sort: "name",
-                flex: setFlex(1, 1, "0%"),
+                flex: setFlex(1, 1, "65%"),
             },
             {
                 id: "trackCount",
                 label: "Tracks",
                 sort: "trackCount",
-                flex: setFlex(1, 1, "0%"),
+                flex: setFlex(1, 1, "35%"),
             },
         ],
         rows: [],
@@ -77,7 +78,18 @@ export class PlaylistMenu extends MobxLitElement {
         };
     }
 
-    private createPlaylistRow(playlist: PlaylistDetails): Row {
+    private createPlaylistRow(
+        playlist: PlaylistDetails & SpotifyPlaylist
+    ): Row {
+        const imageStyles = {
+            width: "32px",
+            height: "32px",
+            objectFit: "cover",
+            borderRadius: "2px",
+            marginRight: "8px",
+            padding: "0",
+        };
+
         return {
             id: playlist.id,
             cells: [
@@ -85,9 +97,22 @@ export class PlaylistMenu extends MobxLitElement {
                     header: "name",
                     value: playlist.name,
                     render: () => html`
-                        <platform-table-cell
-                            >${playlist.name}</platform-table-cell
-                        >
+                        <platform-table-cell>
+                            <div style="display: flex; align-items: center;">
+                                <img
+                                    src="${playlist.images?.[0]?.url || ""}"
+                                    alt="${playlist.name}"
+                                    loading="lazy"
+                                    style=${styleMap(imageStyles)}
+                                    @error=${(e: Event) => {
+                                        const img =
+                                            e.target as HTMLImageElement;
+                                        img.style.display = "none";
+                                    }}
+                                />
+                                <span>${playlist.name}</span>
+                            </div>
+                        </platform-table-cell>
                     `,
                 },
                 {
