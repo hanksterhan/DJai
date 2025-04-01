@@ -1,55 +1,100 @@
 import { html } from "lit";
 import { styles } from "./styles.css";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { MobxLitElement } from "@adobe/lit-mobx";
 import { spotifyAuthService } from "../../services/spotifyAuthService";
+import { currentlyPlayingStore } from "../../stores/CurrentlyPlayingStore/currentlyPlayingStore";
 
 declare global {
     interface Window {
+        Spotify: {
+            Player: new (config: any) => any;
+        };
         onSpotifyWebPlaybackSDKReady: () => void;
-        Spotify: any;
     }
+}
+
+interface PlayerState {
+    track_window: {
+        current_track: {
+            name: string;
+            uri: string;
+            artists: { name: string }[];
+            album: {
+                name: string;
+                images: { url: string }[];
+            };
+        };
+    };
+    paused: boolean;
 }
 
 @customElement("spotify-player")
 export class SpotifyPlayer extends MobxLitElement {
-    static readonly TAG_NAME = "spotify-player";
-    static get styles() {
-        return styles;
-    }
+    static styles = styles;
 
     @state()
     private player: any = null;
 
-    @state()
-    private isPlaying: boolean = false;
-
-    @state()
-    private currentTrack: any = null;
-
-    @state()
-    private deviceId: string | null = null;
-
-    @property({ type: String })
-    placeholderProperty: string = "";
-
-    connectedCallback() {
-        super.connectedCallback();
-        this.initializeSpotifyPlayer();
+    async firstUpdated() {
+        await this.initializePlayer();
     }
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        if (this.player) {
-            this.player.disconnect();
+    private async initializePlayer() {
+        this.player = new window.Spotify.Player({
+            name: "DJai Web Player",
+            getOAuthToken: (cb: (token: string) => void) => {
+                spotifyAuthService.getAccessToken().then((token) => cb(token));
+            },
+            volume: 0.5,
+        });
+
+        this.player.addListener(
+            "ready",
+            ({ device_id }: { device_id: string }) => {
+                console.log("Ready with Device ID", device_id);
+                currentlyPlayingStore.setDeviceId(device_id);
+            }
+        );
+
+        this.player.addListener(
+            "player_state_changed",
+            (state: PlayerState | null) => {
+                if (!state) return;
+
+                const currentTrack = state.track_window.current_track;
+                currentlyPlayingStore.setCurrentTrack({
+                    name: currentTrack.name,
+                    uri: currentTrack.uri,
+                    artists: currentTrack.artists,
+                    album: {
+                        name: currentTrack.album.name,
+                        images: currentTrack.album.images,
+                    },
+                });
+                currentlyPlayingStore.setIsPlaying(!state.paused);
+            }
+        );
+
+        await this.player.connect();
+    }
+
+    public async togglePlay() {
+        if (!this.player) return;
+        await this.player.togglePlay();
+    }
+
+    public async playTrack(uri: string) {
+        const deviceId = currentlyPlayingStore.getDeviceId;
+        if (!deviceId) {
+            console.error("No device ID available");
+            return;
         }
-    }
 
-    private async transferPlaybackToDevice(deviceId: string) {
         try {
             const token = await spotifyAuthService.getAccessToken();
             const response = await fetch(
-                "https://api.spotify.com/v1/me/player",
+                `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
                 {
                     method: "PUT",
                     headers: {
@@ -57,143 +102,77 @@ export class SpotifyPlayer extends MobxLitElement {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        device_ids: [deviceId],
-                        play: true,
+                        uris: [uri],
                     }),
                 }
             );
 
             if (!response.ok) {
-                throw new Error("Failed to transfer playback");
+                throw new Error("Failed to play track");
             }
         } catch (error) {
-            console.error("Error transferring playback:", error);
-        }
-    }
-
-    private async initializeSpotifyPlayer() {
-        // Load the Spotify Web Playback SDK script
-        const script = document.createElement("script");
-        script.src = "https://sdk.scdn.co/spotify-player.js";
-        script.async = true;
-        document.body.appendChild(script);
-
-        window.onSpotifyWebPlaybackSDKReady = async () => {
-            const token = await spotifyAuthService.getAccessToken();
-
-            this.player = new window.Spotify.Player({
-                name: "DJai Web Player",
-                getOAuthToken: (cb: (token: string) => void) => {
-                    cb(token);
-                },
-                volume: 0.5,
-            });
-
-            // Error handling
-            this.player.addListener(
-                "initialization_error",
-                ({ message }: { message: string }) => {
-                    console.error("Failed to initialize:", message);
-                }
-            );
-
-            this.player.addListener(
-                "authentication_error",
-                ({ message }: { message: string }) => {
-                    console.error("Failed to authenticate:", message);
-                }
-            );
-
-            this.player.addListener(
-                "account_error",
-                ({ message }: { message: string }) => {
-                    console.error(
-                        "Failed to validate Spotify account:",
-                        message
-                    );
-                }
-            );
-
-            // Playback status updates
-            this.player.addListener("player_state_changed", (state: any) => {
-                if (state) {
-                    this.isPlaying = !state.paused;
-                    this.currentTrack = state.track_window.current_track;
-                }
-            });
-
-            // Ready
-            this.player.addListener(
-                "ready",
-                async ({ device_id }: { device_id: string }) => {
-                    console.log("Ready with Device ID", device_id);
-                    this.deviceId = device_id;
-                    await this.player.activateElement(); // Activate the element for mobile support
-                    await this.transferPlaybackToDevice(device_id);
-                }
-            );
-
-            // Not Ready
-            this.player.addListener(
-                "not_ready",
-                ({ device_id }: { device_id: string }) => {
-                    console.log("Device ID has gone offline", device_id);
-                    this.deviceId = null;
-                }
-            );
-
-            // Connect to the player
-            this.player.connect();
-        };
-    }
-
-    private async togglePlay() {
-        if (this.player) {
-            await this.player.togglePlay();
-        }
-    }
-
-    private async reconnectPlayer() {
-        if (this.deviceId && this.player) {
-            await this.player.connect();
-            await this.transferPlaybackToDevice(this.deviceId);
+            console.error("Error playing track:", error);
+            throw error;
         }
     }
 
     render() {
+        const currentTrack = currentlyPlayingStore.getCurrentTrack;
+        const isPlaying = currentlyPlayingStore.getIsPlaying;
+
         return html`
-            <div class="spotify-player">
-                <div class="player-info">
-                    ${this.currentTrack
-                        ? html`
+            <div class="player-container">
+                ${currentTrack
+                    ? html`
+                          <div class="track-info">
+                              <button
+                                  class="play-button"
+                                  @click=${this.togglePlay}
+                              >
+                                  <div class="play-icon">
+                                      ${isPlaying
+                                          ? html`
+                                                <svg
+                                                    viewBox="0 0 24 24"
+                                                    width="24"
+                                                    height="24"
+                                                    fill="currentColor"
+                                                >
+                                                    <path
+                                                        d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"
+                                                    />
+                                                </svg>
+                                            `
+                                          : html`
+                                                <svg
+                                                    viewBox="0 0 24 24"
+                                                    width="24"
+                                                    height="24"
+                                                    fill="currentColor"
+                                                >
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            `}
+                                  </div>
+                              </button>
                               <img
-                                  src="${this.currentTrack.album.images[0].url}"
-                                  alt="${this.currentTrack.name}"
+                                  src="${currentTrack.album.images[0]?.url}"
+                                  alt="${currentTrack.album.name}"
                                   class="album-art"
                               />
-                              <div class="track-info">
-                                  <h3>${this.currentTrack.name}</h3>
-                                  <p>${this.currentTrack.artists[0].name}</p>
+                              <div class="track-details">
+                                  <div class="track-name">
+                                      ${currentTrack.name}
+                                  </div>
+                                  <div class="artist-name">
+                                      ${currentTrack.artists
+                                          .map((a) => a.name)
+                                          .join(", ")}
+                                  </div>
                               </div>
-                          `
-                        : html`
-                              <div class="no-track">
-                                  <p>No track playing</p>
-                              </div>
-                          `}
-                </div>
-                <div class="player-controls">
-                    <button @click=${this.togglePlay}>
-                        ${this.isPlaying ? "Pause" : "Play"}
-                    </button>
-                    ${!this.deviceId
-                        ? html`
-                              <button @click=${this.reconnectPlayer}>
-                                  Reconnect
-                              </button>
-                          `
-                        : ""}
-                </div>
+                          </div>
+                      `
+                    : html` <div class="no-track">No track playing</div> `}
             </div>
         `;
     }

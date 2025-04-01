@@ -1,11 +1,13 @@
 import { html } from "lit";
 import { styles } from "./styles.css";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, state, query } from "lit/decorators.js";
 import { MobxLitElement } from "@adobe/lit-mobx";
 import { playlistStore } from "../../stores/PlaylistStore/playlistStore";
 import { TableData, Row, setFlex } from "../PlatformTable/tableInterfaces";
 import { SpotifyPlaylistTrackItem } from "@common/interfaces";
 import { styleMap } from "lit/directives/style-map.js";
+import { currentlyPlayingStore } from "../../stores/CurrentlyPlayingStore/currentlyPlayingStore";
+import { SpotifyPlayer } from "../SpotifyPlayer/spotifyPlayer";
 
 @customElement("playlist-tracks")
 export class PlaylistTracks extends MobxLitElement {
@@ -17,26 +19,35 @@ export class PlaylistTracks extends MobxLitElement {
     @property({ type: String })
     playlistId: string | null = null;
 
+    @query("spotify-player")
+    private spotifyPlayer?: SpotifyPlayer;
+
     @state()
     private tracksTableData: TableData = {
         headers: [
             {
+                id: "index",
+                label: "#",
+                sort: "index",
+                flex: setFlex(0.5, 1, "5%"),
+            },
+            {
                 id: "name",
                 label: "Title",
                 sort: "name",
-                flex: setFlex(3, 1, "0%"),
+                flex: setFlex(3, 1, "55%"),
             },
             {
                 id: "album",
                 label: "Album",
                 sort: "album",
-                flex: setFlex(2, 1, "0%"),
+                flex: setFlex(2, 1, "30%"),
             },
             {
                 id: "duration",
                 label: "Duration",
                 sort: "duration",
-                flex: setFlex(1, 1, "0%"),
+                flex: setFlex(1, 1, "30%"),
             },
         ],
         rows: [],
@@ -69,14 +80,21 @@ export class PlaylistTracks extends MobxLitElement {
         if (selectedPlaylist) {
             this.tracksTableData = {
                 ...this.tracksTableData,
-                rows: selectedPlaylist.tracks.map((track) =>
-                    this.createTrackRow(track)
+                rows: selectedPlaylist.tracks.map((track, index) =>
+                    this.createTrackRow(track, index)
                 ),
             };
         }
     }
 
-    private createTrackRow(track: SpotifyPlaylistTrackItem): Row {
+    private createTrackRow(
+        track: SpotifyPlaylistTrackItem,
+        index: number
+    ): Row {
+        const isCurrentTrack =
+            currentlyPlayingStore.getCurrentTrack?.uri === track.track.uri;
+        const isPlaying = currentlyPlayingStore.getIsPlaying && isCurrentTrack;
+
         const duration = Math.round(track.track.duration_ms / 1000);
         const minutes = Math.floor(duration / 60);
         const seconds = duration % 60;
@@ -92,7 +110,11 @@ export class PlaylistTracks extends MobxLitElement {
         const containerStyles = {
             display: "flex",
             alignItems: "center",
-            gap: "12px",
+            gap: "16px",
+            padding: "8px",
+            backgroundColor: isCurrentTrack
+                ? "rgba(29, 185, 84, 0.1)"
+                : "transparent",
         };
 
         const textContainerStyles = {
@@ -109,12 +131,96 @@ export class PlaylistTracks extends MobxLitElement {
 
         const artistStyles = {
             fontSize: "12px",
-            opacity: "0.8",
+            opacity: "0.7",
+        };
+
+        const indexContainerStyles = {
+            width: "40px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            cursor: "pointer",
+        };
+
+        const trackNumberStyles = {
+            display: "block",
+            color: isCurrentTrack ? "#1DB954" : "inherit",
+        };
+
+        const playButtonStyles = {
+            display: "none",
+            color: isPlaying ? "#1DB954" : "inherit",
+        };
+
+        const handlePlayClick = (e: Event) => {
+            e.stopPropagation();
+            currentlyPlayingStore.setCurrentTrack({
+                name: track.track.name,
+                uri: track.track.uri,
+                artists: track.track.artists,
+                album: {
+                    name: track.track.album.name,
+                    images: track.track.album.images,
+                },
+            });
+            this.spotifyPlayer?.playTrack(track.track.uri);
         };
 
         return {
             id: track.track.id,
             cells: [
+                {
+                    header: "index",
+                    value: (index + 1).toString(),
+                    render: () => html`
+                        <platform-table-cell>
+                            <div
+                                class="index-container"
+                                style=${styleMap(indexContainerStyles)}
+                                @click=${handlePlayClick}
+                                @mouseenter=${(e: Event) => {
+                                    const target =
+                                        e.currentTarget as HTMLElement;
+                                    const trackNumber = target.querySelector(
+                                        ".track-number"
+                                    ) as HTMLElement;
+                                    const playButton = target.querySelector(
+                                        ".play-button"
+                                    ) as HTMLElement;
+                                    if (trackNumber && playButton) {
+                                        trackNumber.style.display = "none";
+                                        playButton.style.display = "block";
+                                    }
+                                }}
+                                @mouseleave=${(e: Event) => {
+                                    const target =
+                                        e.currentTarget as HTMLElement;
+                                    const trackNumber = target.querySelector(
+                                        ".track-number"
+                                    ) as HTMLElement;
+                                    const playButton = target.querySelector(
+                                        ".play-button"
+                                    ) as HTMLElement;
+                                    if (trackNumber && playButton) {
+                                        trackNumber.style.display = "block";
+                                        playButton.style.display = "none";
+                                    }
+                                }}
+                            >
+                                <span
+                                    class="track-number"
+                                    style=${styleMap(trackNumberStyles)}
+                                    >${index + 1}</span
+                                >
+                                <span
+                                    class="play-button"
+                                    style=${styleMap(playButtonStyles)}
+                                    >▶</span
+                                >
+                            </div>
+                        </platform-table-cell>
+                    `,
+                },
                 {
                     header: "name",
                     value: track.track.name,
@@ -139,7 +245,7 @@ export class PlaylistTracks extends MobxLitElement {
                                     </div>
                                     <div style=${styleMap(artistStyles)}>
                                         ${track.track.artists
-                                            .map((a) => a.name)
+                                            .map((a: any) => a.name)
                                             .join(", ")}
                                     </div>
                                 </div>
