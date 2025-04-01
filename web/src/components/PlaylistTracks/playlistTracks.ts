@@ -21,22 +21,10 @@ export class PlaylistTracks extends MobxLitElement {
     private tracksTableData: TableData = {
         headers: [
             {
-                id: "albumCover",
-                label: "",
-                sort: "albumCover",
-                flex: setFlex(1, 1, "0%"),
-            },
-            {
                 id: "name",
                 label: "Title",
                 sort: "name",
-                flex: setFlex(2, 1, "0%"),
-            },
-            {
-                id: "artist",
-                label: "Artist",
-                sort: "artist",
-                flex: setFlex(2, 1, "0%"),
+                flex: setFlex(3, 1, "0%"),
             },
             {
                 id: "album",
@@ -93,50 +81,69 @@ export class PlaylistTracks extends MobxLitElement {
         const minutes = Math.floor(duration / 60);
         const seconds = duration % 60;
 
-        const albumCoverStyles = {
+        const imageStyles = {
             width: "48px",
             height: "48px",
             objectFit: "cover",
             borderRadius: "2px",
-            padding: "0 0 0 0", // Negative margin to compensate for cell padding
+            padding: "0",
+        };
+
+        const containerStyles = {
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+        };
+
+        const textContainerStyles = {
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: "4px",
+        };
+
+        const titleStyles = {
+            fontSize: "14px",
+            fontWeight: "bold",
+        };
+
+        const artistStyles = {
+            fontSize: "12px",
+            opacity: "0.8",
         };
 
         return {
             id: track.track.id,
             cells: [
                 {
-                    header: "albumCover",
-                    value: track.track.album.images[0]?.url || "",
-                    render: () => html`
-                        <platform-table-cell is-image>
-                            <img
-                                src="${track.track.album.images[0]?.url || ""}"
-                                alt="${track.track.album.name}"
-                                loading="lazy"
-                                @error=${(e: Event) => {
-                                    const img = e.target as HTMLImageElement;
-                                    img.style.display = "none";
-                                }}
-                                style=${styleMap(albumCoverStyles)}
-                            />
-                        </platform-table-cell>
-                    `,
-                },
-                {
                     header: "name",
                     value: track.track.name,
                     render: () => html`
                         <platform-table-cell>
-                            ${track.track.name}
-                        </platform-table-cell>
-                    `,
-                },
-                {
-                    header: "artist",
-                    value: track.track.artists[0]?.name || "",
-                    render: () => html`
-                        <platform-table-cell>
-                            ${track.track.artists.map((a) => a.name).join(", ")}
+                            <div style=${styleMap(containerStyles)}>
+                                <img
+                                    src="${track.track.album.images[0]?.url ||
+                                    ""}"
+                                    alt="${track.track.album.name}"
+                                    loading="lazy"
+                                    style=${styleMap(imageStyles)}
+                                    @error=${(e: Event) => {
+                                        const img =
+                                            e.target as HTMLImageElement;
+                                        img.style.display = "none";
+                                    }}
+                                />
+                                <div style=${styleMap(textContainerStyles)}>
+                                    <div style=${styleMap(titleStyles)}>
+                                        ${track.track.name}
+                                    </div>
+                                    <div style=${styleMap(artistStyles)}>
+                                        ${track.track.artists
+                                            .map((a) => a.name)
+                                            .join(", ")}
+                                    </div>
+                                </div>
+                            </div>
                         </platform-table-cell>
                     `,
                 },
