@@ -5,6 +5,7 @@ import { MobxLitElement } from "@adobe/lit-mobx";
 import { playlistStore } from "../../stores/PlaylistStore/playlistStore";
 import { TableData, Row, setFlex } from "../PlatformTable/tableInterfaces";
 import { SpotifyPlaylistTrackItem } from "@common/interfaces";
+import { styleMap } from "lit/directives/style-map.js";
 
 @customElement("playlist-tracks")
 export class PlaylistTracks extends MobxLitElement {
@@ -19,6 +20,12 @@ export class PlaylistTracks extends MobxLitElement {
     @state()
     private tracksTableData: TableData = {
         headers: [
+            {
+                id: "albumCover",
+                label: "",
+                sort: "albumCover",
+                flex: setFlex(1, 1, "0%"),
+            },
             {
                 id: "name",
                 label: "Title",
@@ -86,9 +93,35 @@ export class PlaylistTracks extends MobxLitElement {
         const minutes = Math.floor(duration / 60);
         const seconds = duration % 60;
 
+        const albumCoverStyles = {
+            width: "48px",
+            height: "48px",
+            objectFit: "cover",
+            borderRadius: "2px",
+            padding: "0 0 0 0", // Negative margin to compensate for cell padding
+        };
+
         return {
             id: track.track.id,
             cells: [
+                {
+                    header: "albumCover",
+                    value: track.track.album.images[0]?.url || "",
+                    render: () => html`
+                        <platform-table-cell is-image>
+                            <img
+                                src="${track.track.album.images[0]?.url || ""}"
+                                alt="${track.track.album.name}"
+                                loading="lazy"
+                                @error=${(e: Event) => {
+                                    const img = e.target as HTMLImageElement;
+                                    img.style.display = "none";
+                                }}
+                                style=${styleMap(albumCoverStyles)}
+                            />
+                        </platform-table-cell>
+                    `,
+                },
                 {
                     header: "name",
                     value: track.track.name,

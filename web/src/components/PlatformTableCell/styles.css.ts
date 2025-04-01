@@ -14,10 +14,10 @@ export const styles = css`
         animation-timing-function: linear;
         background: #2d2d2d; /* Dark gray background */
         color: #ffffff; /* White text */
-        display: block;
+        display: flex;
+        align-items: center;
         width: 100%;
         height: 100%;
-        padding: 8px;
         box-sizing: border-box;
     }
 

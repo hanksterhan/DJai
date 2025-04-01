@@ -14,6 +14,6 @@ export class PlatformTableCell extends MobxLitElement {
     variant: "grow" | "shrink" = "shrink";
 
     protected render(): TemplateResult {
-        return html` <slot></slot> `;
+        return html`<slot></slot>`;
     }
 }
