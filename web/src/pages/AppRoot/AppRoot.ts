@@ -39,7 +39,7 @@ export class AppRoot extends MobxLitElement {
                 menuStore.selectedPage !== "callback"
                     ? html`<app-menu></app-menu>`
                     : ""}
-                <div>
+                <div class="main-content">
                     ${menuStore.selectedPage === "home"
                         ? html`<home-page></home-page>`
                         : ""}
@@ -49,6 +49,9 @@ export class AppRoot extends MobxLitElement {
                     <!-- ${menuStore.selectedPage === "teams"
                         ? html`<teams-page></teams-page>`
                         : ""} -->
+                </div>
+                <div class="player-container">
+                    <spotify-player></spotify-player>
                 </div>
             </sp-theme>
         `;
