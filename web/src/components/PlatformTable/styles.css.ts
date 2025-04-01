@@ -57,10 +57,12 @@ export const styles = css`
 
     sp-table-cell {
         border-color: #2d2d2d !important;
+        text-align: left !important;
     }
 
     sp-table-head-cell {
         border-color: #2d2d2d !important;
+        text-align: left !important;
     }
 
     /* Target all borders */
