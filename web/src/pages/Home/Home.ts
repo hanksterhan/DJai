@@ -3,10 +3,14 @@ import { customElement, state } from "lit/decorators.js";
 import { MobxLitElement } from "@adobe/lit-mobx";
 import { spotifyAuthService } from "../../services/spotifyAuthService";
 import { playlistStore } from "../../stores/PlaylistStore/playlistStore";
+import { styles } from "./styles.css";
 
 @customElement("home-page")
 export class Home extends MobxLitElement {
     static readonly TAG_NAME = "home-page";
+    static get styles() {
+        return styles;
+    }
 
     @state()
     private isAuthenticated = false;
