@@ -33,6 +33,14 @@ export class Callback extends MobxLitElement {
                     error instanceof Error
                         ? error.message
                         : "Authentication failed";
+
+                // Remove query parameters from URL
+                window.history.replaceState(
+                    {},
+                    document.title,
+                    window.location.pathname
+                );
+
                 menuStore.setSelectedPage("error");
             }
         }

@@ -39,7 +39,8 @@ class SpotifyAuth {
     private redirectUri: string;
     private state: string = "";
     private tokenExpiration: Date = new Date();
-    private debugForceExpired: boolean = true;
+
+    private debugForceExpired: boolean = false;
 
     private spotifyAuthClient: ApiClient;
 

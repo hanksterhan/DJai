@@ -24,8 +24,8 @@ export class UserStore {
             const authStatus = await spotifyAuthService.getAuthStatus();
             this.isAuthenticated = authStatus.isAuthenticated;
 
-            // Only set an error if the user is not authenticated and not loading
-            if (!this.isAuthenticated && !this.isLoading) {
+            // Set error if the user is not authenticated
+            if (!this.isAuthenticated) {
                 this.error = "User is not authenticated";
             }
         } catch (error) {

@@ -58,6 +58,10 @@ export class Menu extends MobxLitElement {
     }
 
     navigateTo(page: string) {
+        if (page === "home") {
+            // Reset URL to root path
+            window.history.replaceState({}, document.title, "/");
+        }
         menuStore.setSelectedPage(page);
     }
 

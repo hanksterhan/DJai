@@ -21,6 +21,8 @@ export class ErrorPage extends MobxLitElement {
     errorCode: string = "500";
 
     private navigateToHome() {
+        // Reset URL to root path
+        window.history.replaceState({}, document.title, "/");
         menuStore.setSelectedPage("home");
     }
 

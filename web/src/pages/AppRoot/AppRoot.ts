@@ -48,6 +48,12 @@ export class AppRoot extends MobxLitElement {
                         menuStore.selectedPage === "home" &&
                         !userStore.isAuthenticated
                     ) {
+                        // Remove query parameters from URL
+                        window.history.replaceState(
+                            {},
+                            document.title,
+                            window.location.pathname
+                        );
                         menuStore.setSelectedPage("error");
                     }
                 }
