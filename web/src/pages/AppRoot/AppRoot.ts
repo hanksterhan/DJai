@@ -1,11 +1,16 @@
-import { html } from "lit";
+import { html, nothing } from "lit";
 import { styles } from "./styles.css";
 import { customElement, property, state } from "lit/decorators.js";
 import { MobxLitElement } from "@adobe/lit-mobx";
 import { reaction } from "mobx";
 
 import "../index";
-import { menuStore, userStore } from "../../stores/index";
+import {
+    menuStore,
+    userStore,
+    currentlyPlayingStore,
+} from "../../stores/index";
+import { when } from "lit-html/directives/when.js";
 
 @customElement("app-root")
 export class AppRoot extends MobxLitElement {
@@ -67,8 +72,6 @@ export class AppRoot extends MobxLitElement {
     }
 
     render() {
-        console.log("Current selected page:", menuStore.selectedPage);
-
         return html`
             <sp-theme system="spectrum" color="light" scale="medium" dir="ltr">
                 <app-menu></app-menu>
@@ -88,13 +91,16 @@ export class AppRoot extends MobxLitElement {
                               errorCode=${this.errorCode}
                           ></error-page>`
                         : ""}
-                    <!-- ${menuStore.selectedPage === "teams"
-                        ? html`<teams-page></teams-page>`
-                        : ""} -->
                 </div>
-                <div class="player-container">
-                    <spotify-player></spotify-player>
-                </div>
+                ${when(
+                    currentlyPlayingStore.isPlaying,
+                    () => html`
+                        <div class="player-container">
+                            <spotify-player></spotify-player>
+                        </div>
+                    `,
+                    () => nothing
+                )}
             </sp-theme>
         `;
     }

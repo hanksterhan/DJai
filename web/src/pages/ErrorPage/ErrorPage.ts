@@ -32,6 +32,7 @@ export class ErrorPage extends MobxLitElement {
                         size="xl"
                         class="error-icon"
                     ></sp-icon-alert-circle>
+                    <p class="error-message">User is not authenticated</p>
                     <sp-button
                         variant="primary"
                         @click=${this.navigateToHome}
