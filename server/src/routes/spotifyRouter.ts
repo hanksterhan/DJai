@@ -11,6 +11,9 @@ function createRouter(): IRouter {
     router.get("/auth-status", spotifyHandler.getAuthStatus);
     router.get("/playlists", spotifyHandler.getPlaylists);
 
+    // Debug endpoints
+    router.post("/debug/force-expired", spotifyHandler.toggleDebugForceExpired);
+
     // Playlist endpoints
     router.get(
         "/playlists/:playlistId/tracks",

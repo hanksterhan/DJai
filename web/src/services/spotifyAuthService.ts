@@ -11,6 +11,7 @@ enum SPOTIFY_AUTH_ENDPOINTS {
     CALLBACK = "/api/spotify/callback",
     TOKEN = "/api/spotify/token",
     AUTH_STATUS = "/api/spotify/auth-status",
+    DEBUG_FORCE_EXPIRED = "/api/spotify/debug/force-expired",
 }
 
 export class SpotifyAuthService extends ApiClient {
@@ -63,6 +64,25 @@ export class SpotifyAuthService extends ApiClient {
             );
         } catch (error) {
             throw error; // Re-throw the error to be caught by the UserStore
+        }
+    }
+
+    /**
+     * Toggles debug mode to force token expiration
+     * @param forceExpired - Whether to force the token to be considered expired
+     * @returns The current debug mode status
+     */
+    async toggleDebugForceExpired(
+        forceExpired: boolean
+    ): Promise<{ debugForceExpired: boolean }> {
+        try {
+            const response = await this.post<
+                ApiResponse<{ debugForceExpired: boolean }>
+            >(SPOTIFY_AUTH_ENDPOINTS.DEBUG_FORCE_EXPIRED, { forceExpired });
+            return response.data;
+        } catch (error) {
+            console.error("Failed to toggle debug mode:", error);
+            throw error;
         }
     }
 }

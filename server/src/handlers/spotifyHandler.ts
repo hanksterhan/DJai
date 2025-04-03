@@ -90,6 +90,30 @@ class SpotifyHandler {
             res.status(500).json({ error: "Failed to get playlist tracks" });
         }
     };
+
+    /**
+     * Toggles debug mode to force token expiration
+     */
+    toggleDebugForceExpired = async (req: Request, res: Response) => {
+        try {
+            const { forceExpired } = req.body;
+            if (typeof forceExpired !== "boolean") {
+                return res
+                    .status(400)
+                    .json({ error: "forceExpired must be a boolean" });
+            }
+
+            spotifyAuth.setDebugForceExpired(forceExpired);
+            res.json({
+                data: {
+                    debugForceExpired: spotifyAuth.getDebugForceExpired(),
+                },
+            });
+        } catch (error) {
+            console.error("Failed to toggle debug mode:", error);
+            res.status(500).json({ error: "Failed to toggle debug mode" });
+        }
+    };
 }
 
 export const spotifyHandler = new SpotifyHandler();

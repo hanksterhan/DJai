@@ -39,6 +39,7 @@ class SpotifyAuth {
     private redirectUri: string;
     private state: string = "";
     private tokenExpiration: Date = new Date();
+    private debugForceExpired: boolean = true;
 
     private spotifyAuthClient: ApiClient;
 
@@ -134,6 +135,9 @@ class SpotifyAuth {
      * @private
      */
     private isTokenExpired(): boolean {
+        if (this.debugForceExpired) {
+            return true;
+        }
         const currentTime = new Date();
         return currentTime.getTime() > this.tokenExpiration.getTime();
     }
@@ -219,6 +223,23 @@ class SpotifyAuth {
             console.error("Error checking authentication status:", error);
             return false;
         }
+    }
+
+    /**
+     * Sets debug mode to force token expiration
+     * @param forceExpired - Whether to force the token to be considered expired
+     */
+    setDebugForceExpired(forceExpired: boolean): void {
+        this.debugForceExpired = forceExpired;
+        console.log(`Debug mode: Force token expired = ${forceExpired}`);
+    }
+
+    /**
+     * Gets the current debug mode status
+     * @returns Whether debug mode is forcing token expiration
+     */
+    getDebugForceExpired(): boolean {
+        return this.debugForceExpired;
     }
 }
 
