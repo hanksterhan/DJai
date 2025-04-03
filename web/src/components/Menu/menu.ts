@@ -12,10 +12,7 @@ interface MenuItemDetails {
 }
 
 // id is internal, name is shown in menu
-const MENU_ITEMS: MenuItemDetails[] = [
-    { id: "home", name: "Home" },
-    { id: "queue", name: "Queue" },
-];
+const MENU_ITEMS: MenuItemDetails[] = [{ id: "queue", name: "Queue" }];
 
 @customElement("app-menu")
 export class Menu extends MobxLitElement {
@@ -43,9 +40,9 @@ export class Menu extends MobxLitElement {
 
     generateMenuItem(itemDetails: MenuItemDetails): TemplateResult {
         return html` <sp-button
-            static="black"
             size="xl"
             @click=${() => this.navigateTo(itemDetails.id)}
+            class="menu-button"
         >
             <h2>${itemDetails.name}</h2>
         </sp-button>`;
@@ -54,6 +51,9 @@ export class Menu extends MobxLitElement {
     render() {
         return html`
             <div class="header-bar">
+                <div class="logo" @click=${() => this.navigateTo("home")}>
+                    <h2>DJai</h2>
+                </div>
                 <sp-button-group>
                     ${MENU_ITEMS.map((menuItem: MenuItemDetails) => {
                         return this.generateMenuItem(menuItem);

@@ -65,7 +65,6 @@ export class Home extends MobxLitElement {
         if (this.isLoading) {
             return html`
                 <div class="home-container">
-                    <h1>Welcome to DJai</h1>
                     <p>Loading...</p>
                 </div>
             `;
@@ -74,7 +73,6 @@ export class Home extends MobxLitElement {
         if (this.error) {
             return html`
                 <div class="home-container">
-                    <h1>Welcome to DJai</h1>
                     <p class="error">${this.error}</p>
                     <sp-button variant="primary" @click=${this.handleLogin}>
                         Connect Spotify
@@ -85,7 +83,6 @@ export class Home extends MobxLitElement {
 
         return html`
             <div class="home-container">
-                <h1>Welcome to DJai</h1>
                 ${this.isAuthenticated
                     ? html`
                           <p>You're connected to Spotify!</p>
