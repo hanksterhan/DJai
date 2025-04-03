@@ -78,16 +78,54 @@ export class PlaylistMenu extends MobxLitElement {
         };
     }
 
+    private async handlePlayPlaylist(
+        playlist: PlaylistDetails & SpotifyPlaylist,
+        e: Event
+    ) {
+        e.stopPropagation();
+        try {
+            await playlistStore.playPlaylist(playlist.id);
+        } catch (error) {
+            console.error("Failed to play playlist:", error);
+        }
+    }
+
     private createPlaylistRow(
         playlist: PlaylistDetails & SpotifyPlaylist
     ): Row {
-        const imageStyles = {
+        const coverContainerStyles = {
+            position: "relative",
             width: "32px",
             height: "32px",
+            marginRight: "8px",
+        };
+
+        const coverStyles = {
+            width: "100%",
+            height: "100%",
             objectFit: "cover",
             borderRadius: "2px",
-            marginRight: "8px",
-            padding: "0",
+        };
+
+        const playButtonStyles = {
+            position: "absolute",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "100%",
+            background: "rgba(0, 0, 0, 0.5)",
+            borderRadius: "2px",
+            display: "none",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transition: "background-color 0.2s ease",
+        };
+
+        const playIconStyles = {
+            width: "16px",
+            height: "16px",
+            color: "white",
         };
 
         return {
@@ -99,17 +137,61 @@ export class PlaylistMenu extends MobxLitElement {
                     render: () => html`
                         <platform-table-cell>
                             <div style="display: flex; align-items: center;">
-                                <img
-                                    src="${playlist.images?.[0]?.url || ""}"
-                                    alt="${playlist.name}"
-                                    loading="lazy"
-                                    style=${styleMap(imageStyles)}
-                                    @error=${(e: Event) => {
-                                        const img =
-                                            e.target as HTMLImageElement;
-                                        img.style.display = "none";
+                                <div
+                                    class="playlist-cover-container"
+                                    style=${styleMap(coverContainerStyles)}
+                                    @mouseenter=${(e: Event) => {
+                                        const container =
+                                            e.currentTarget as HTMLElement;
+                                        const playButton =
+                                            container.querySelector(
+                                                ".play-button-overlay"
+                                            ) as HTMLElement;
+                                        if (playButton) {
+                                            playButton.style.display = "flex";
+                                        }
                                     }}
-                                />
+                                    @mouseleave=${(e: Event) => {
+                                        const container =
+                                            e.currentTarget as HTMLElement;
+                                        const playButton =
+                                            container.querySelector(
+                                                ".play-button-overlay"
+                                            ) as HTMLElement;
+                                        if (playButton) {
+                                            playButton.style.display = "none";
+                                        }
+                                    }}
+                                >
+                                    <img
+                                        src="${playlist.images?.[0]?.url || ""}"
+                                        alt="${playlist.name}"
+                                        loading="lazy"
+                                        style=${styleMap(coverStyles)}
+                                        @error=${(e: Event) => {
+                                            const img =
+                                                e.target as HTMLImageElement;
+                                            img.style.display = "none";
+                                        }}
+                                    />
+                                    <div
+                                        class="play-button-overlay"
+                                        style=${styleMap(playButtonStyles)}
+                                        @click=${(e: Event) =>
+                                            this.handlePlayPlaylist(
+                                                playlist,
+                                                e
+                                            )}
+                                    >
+                                        <svg
+                                            style=${styleMap(playIconStyles)}
+                                            viewBox="0 0 24 24"
+                                            fill="currentColor"
+                                        >
+                                            <path d="M8 5v14l11-7z" />
+                                        </svg>
+                                    </div>
+                                </div>
                                 <span>${playlist.name}</span>
                             </div>
                         </platform-table-cell>

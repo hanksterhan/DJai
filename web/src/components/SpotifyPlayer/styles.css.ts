@@ -112,4 +112,50 @@ export const styles = css`
         padding: 32px 0;
         font-size: 16px;
     }
+
+    .initializing {
+        text-align: center;
+        color: #b3b3b3;
+        padding: 32px 0;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .initializing::after {
+        content: "";
+        width: 20px;
+        height: 20px;
+        border: 2px solid #b3b3b3;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .error-message {
+        text-align: center;
+        color: #ff4444;
+        padding: 32px 0;
+        font-size: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .error-message button {
+        background: #ff4444;
+    }
+
+    .error-message button:hover {
+        background: #ff6666;
+    }
 `;

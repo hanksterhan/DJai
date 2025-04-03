@@ -1,36 +1,121 @@
 import { action, makeObservable, observable, runInAction } from "mobx";
 import { spotifyService } from "../../services/spotifyService";
-import { PlaylistDetails } from "@common/interfaces";
+import { PlaylistDetails, SpotifyPlaylistTrackItem } from "@common/interfaces";
+import { currentlyPlayingStore } from "../CurrentlyPlayingStore/currentlyPlayingStore";
+import { spotifyAuthService } from "../../services/spotifyAuthService";
 
 interface PlaylistMap {
     [key: string]: PlaylistDetails;
 }
 
 export class PlaylistStore {
+    @observable playlists: PlaylistMap = {};
+    @observable isLoading: boolean = false;
+    @observable error: string | null = null;
+    @observable currentQueue: SpotifyPlaylistTrackItem[] = [];
+    @observable currentQueueIndex: number = -1;
+
     constructor() {
-        makeObservable(this, {
-            playlists: observable,
-            isLoading: observable,
-            error: observable,
-            fetchPlaylists: action,
-            fetchPlaylistTracks: action,
-            setError: action,
-            setIsLoading: action,
-        });
+        makeObservable(this);
     }
 
-    playlists: PlaylistMap = {};
-    isLoading: boolean = false;
-    error: string | null = null;
-
+    @action
     setIsLoading(loading: boolean) {
         this.isLoading = loading;
     }
 
+    @action
     setError(error: string | null) {
         this.error = error;
     }
 
+    @action
+    setCurrentQueue(tracks: SpotifyPlaylistTrackItem[]) {
+        this.currentQueue = tracks;
+    }
+
+    @action
+    setCurrentQueueIndex(index: number) {
+        this.currentQueueIndex = index;
+    }
+
+    @action
+    async playPlaylist(playlistId: string) {
+        try {
+            // Fetch tracks if not already loaded
+            if (!this.playlists[playlistId]?.tracks?.length) {
+                await this.fetchPlaylistTracks(playlistId);
+            }
+
+            const playlist = this.playlists[playlistId];
+            if (!playlist?.tracks?.length) {
+                throw new Error("No tracks found in playlist");
+            }
+
+            // Set up the queue
+            this.setCurrentQueue(playlist.tracks);
+            this.setCurrentQueueIndex(0);
+
+            // Play the first track
+            const firstTrack = playlist.tracks[0].track;
+            await this.playTrack(firstTrack.uri);
+        } catch (error) {
+            console.error("Failed to play playlist:", error);
+            this.setError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to play playlist"
+            );
+        }
+    }
+
+    private async playTrack(uri: string) {
+        try {
+            const deviceId = currentlyPlayingStore.getDeviceId;
+            if (!deviceId) {
+                throw new Error("No active device found.");
+            }
+
+            const token = await spotifyAuthService.getAccessToken();
+            await fetch(
+                `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        uris: [uri],
+                    }),
+                }
+            );
+        } catch (error) {
+            console.error("Failed to play track:", error);
+            throw error;
+        }
+    }
+
+    @action
+    async playNextTrack() {
+        if (this.currentQueueIndex < this.currentQueue.length - 1) {
+            this.currentQueueIndex++;
+            const nextTrack = this.currentQueue[this.currentQueueIndex].track;
+            await this.playTrack(nextTrack.uri);
+        }
+    }
+
+    @action
+    async playPreviousTrack() {
+        if (this.currentQueueIndex > 0) {
+            this.currentQueueIndex--;
+            const previousTrack =
+                this.currentQueue[this.currentQueueIndex].track;
+            await this.playTrack(previousTrack.uri);
+        }
+    }
+
+    @action
     async fetchPlaylists() {
         this.setIsLoading(true);
         this.setError(null);
@@ -66,6 +151,7 @@ export class PlaylistStore {
         }
     }
 
+    @action
     async fetchPlaylistTracks(
         playlistId: string,
         onProgress?: (progress: number) => void
@@ -88,6 +174,8 @@ export class PlaylistStore {
             runInAction(() => {
                 this.playlists[playlistId].tracks = tracks;
             });
+
+            return tracks;
         } catch (error) {
             runInAction(() => {
                 this.playlists[playlistId].tracksError =
@@ -95,6 +183,7 @@ export class PlaylistStore {
                         ? error.message
                         : "Failed to fetch tracks";
             });
+            throw error;
         } finally {
             runInAction(() => {
                 this.playlists[playlistId].isLoadingTracks = false;
