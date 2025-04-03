@@ -14,19 +14,10 @@ export class PlaylistStore {
     @observable error: string | null = null;
     @observable currentQueue: SpotifyPlaylistTrackItem[] = [];
     @observable currentQueueIndex: number = -1;
+    @observable hasLoadedPlaylists: boolean = false;
 
     constructor() {
         makeObservable(this);
-    }
-
-    @action
-    setIsLoading(loading: boolean) {
-        this.isLoading = loading;
-    }
-
-    @action
-    setError(error: string | null) {
-        this.error = error;
     }
 
     @action
@@ -37,6 +28,16 @@ export class PlaylistStore {
     @action
     setCurrentQueueIndex(index: number) {
         this.currentQueueIndex = index;
+    }
+
+    @action
+    setIsLoading(isLoading: boolean) {
+        this.isLoading = isLoading;
+    }
+
+    @action
+    setError(error: string | null) {
+        this.error = error;
     }
 
     @action
@@ -69,6 +70,25 @@ export class PlaylistStore {
         }
     }
 
+    @action
+    async playNextTrack() {
+        if (this.currentQueueIndex < this.currentQueue.length - 1) {
+            this.currentQueueIndex++;
+            const nextTrack = this.currentQueue[this.currentQueueIndex].track;
+            await this.playTrack(nextTrack.uri);
+        }
+    }
+
+    @action
+    async playPreviousTrack() {
+        if (this.currentQueueIndex > 0) {
+            this.currentQueueIndex--;
+            const previousTrack =
+                this.currentQueue[this.currentQueueIndex].track;
+            await this.playTrack(previousTrack.uri);
+        }
+    }
+
     private async playTrack(uri: string) {
         try {
             const deviceId = currentlyPlayingStore.getDeviceId;
@@ -97,26 +117,12 @@ export class PlaylistStore {
     }
 
     @action
-    async playNextTrack() {
-        if (this.currentQueueIndex < this.currentQueue.length - 1) {
-            this.currentQueueIndex++;
-            const nextTrack = this.currentQueue[this.currentQueueIndex].track;
-            await this.playTrack(nextTrack.uri);
-        }
-    }
-
-    @action
-    async playPreviousTrack() {
-        if (this.currentQueueIndex > 0) {
-            this.currentQueueIndex--;
-            const previousTrack =
-                this.currentQueue[this.currentQueueIndex].track;
-            await this.playTrack(previousTrack.uri);
-        }
-    }
-
-    @action
     async fetchPlaylists() {
+        // If we've already loaded playlists, don't fetch again
+        if (this.hasLoadedPlaylists) {
+            return;
+        }
+
         this.setIsLoading(true);
         this.setError(null);
 
@@ -135,6 +141,7 @@ export class PlaylistStore {
                         tracksError: undefined,
                     };
                 });
+                this.hasLoadedPlaylists = true;
             });
         } catch (error) {
             runInAction(() => {
@@ -191,7 +198,6 @@ export class PlaylistStore {
         }
     }
 
-    // Computed getters
     getPlaylist(playlistId: string): PlaylistDetails | undefined {
         return this.playlists[playlistId];
     }
