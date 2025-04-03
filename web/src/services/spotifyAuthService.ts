@@ -26,7 +26,6 @@ export class SpotifyAuthService extends ApiClient {
                 throw new Error("Failed to get Spotify authorization URL");
             }
         } catch (error) {
-            console.error("Error in spotifyAuthService.login():", error);
             throw error; // Re-throw the error to be caught by the UserStore
         }
     }
@@ -38,10 +37,6 @@ export class SpotifyAuthService extends ApiClient {
             );
             return response.data;
         } catch (error) {
-            console.error(
-                "Error in spotifyAuthService.getAuthStatus():",
-                error
-            );
             throw error; // Re-throw the error to be caught by the UserStore
         }
     }
@@ -53,10 +48,6 @@ export class SpotifyAuthService extends ApiClient {
             );
             return response.data.access_token;
         } catch (error) {
-            console.error(
-                "Error in spotifyAuthService.getAccessToken():",
-                error
-            );
             throw error; // Re-throw the error to be caught by the UserStore
         }
     }
@@ -71,10 +62,6 @@ export class SpotifyAuthService extends ApiClient {
                 }
             );
         } catch (error) {
-            console.error(
-                "Error in spotifyAuthService.handleCallback():",
-                error
-            );
             throw error; // Re-throw the error to be caught by the UserStore
         }
     }

@@ -1,11 +1,11 @@
 import { html } from "lit";
 import { styles } from "./styles.css";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { MobxLitElement } from "@adobe/lit-mobx";
+import { reaction } from "mobx";
 
 import "../index";
-
-import { menuStore } from "../../stores/index";
+import { menuStore, userStore } from "../../stores/index";
 
 @customElement("app-root")
 export class AppRoot extends MobxLitElement {
@@ -17,9 +17,45 @@ export class AppRoot extends MobxLitElement {
     @property({ type: String })
     selectedPage: string = menuStore.selectedPage;
 
+    @state()
+    private errorMessage: string = "";
+
+    @state()
+    private errorCode: string = "500";
+
+    private disposer: (() => void) | null = null;
+
     connectedCallback() {
         super.connectedCallback();
         this.handleRouting();
+
+        // Set up a reaction to userStore.error
+        this.disposer = reaction(
+            () => userStore.error,
+            (error) => {
+                if (error) {
+                    this.errorMessage = error;
+                    this.errorCode = "401";
+
+                    // Only route to error page if we're not already on a specific page
+                    // or if we're on the home page and not authenticated
+                    if (
+                        menuStore.selectedPage === "home" &&
+                        !userStore.isAuthenticated
+                    ) {
+                        menuStore.setSelectedPage("error");
+                    }
+                }
+            }
+        );
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this.disposer) {
+            this.disposer();
+            this.disposer = null;
+        }
     }
 
     private handleRouting() {
@@ -45,6 +81,12 @@ export class AppRoot extends MobxLitElement {
                         : ""}
                     ${menuStore.selectedPage === "queue"
                         ? html`<queue-page></queue-page>`
+                        : ""}
+                    ${menuStore.selectedPage === "error"
+                        ? html`<error-page
+                              errorMessage=${this.errorMessage}
+                              errorCode=${this.errorCode}
+                          ></error-page>`
                         : ""}
                     <!-- ${menuStore.selectedPage === "teams"
                         ? html`<teams-page></teams-page>`

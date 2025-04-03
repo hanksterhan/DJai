@@ -41,19 +41,10 @@ export class Home extends MobxLitElement {
             `;
         }
 
-        if (userStore.error) {
-            return html`
-                <div class="home-container">
-                    <p class="error">${userStore.error}</p>
-                </div>
-            `;
-        }
-
         return html`
             <div class="home-container">
                 ${userStore.isAuthenticated
                     ? html`
-                          <p>You're connected to Spotify!</p>
                           ${playlistStore.isLoading
                               ? html`<p>Loading playlists...</p>`
                               : playlistStore.error

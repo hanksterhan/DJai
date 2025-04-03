@@ -2,7 +2,7 @@ import { html } from "lit";
 import { customElement } from "lit/decorators.js";
 import { MobxLitElement } from "@adobe/lit-mobx";
 import { spotifyAuthService } from "../../services/spotifyAuthService";
-import { menuStore } from "../../stores";
+import { menuStore, userStore } from "../../stores";
 
 @customElement("callback-page")
 export class Callback extends MobxLitElement {
@@ -10,28 +10,39 @@ export class Callback extends MobxLitElement {
 
     async connectedCallback() {
         super.connectedCallback();
-        console.log("Callback component connected");
 
         // Get code and state from URL params
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
         const state = urlParams.get("state");
-        console.log("Auth code:", code, "State:", state);
 
         if (code && state) {
             try {
-                console.log("Attempting callback to server...");
                 await spotifyAuthService.handleCallback(code, state);
-                console.log("Server callback successful");
+
+                // Explicitly set authenticated to true since we've successfully handled the callback
+                userStore.setAuthenticated(true);
+
+                // Also check auth status to ensure everything is in sync
+                await userStore.checkAuthStatus();
+
                 menuStore.setSelectedPage("home");
-                console.log("Navigation requested to home");
             } catch (error) {
-                console.error("Authentication failed:", error);
+                // Set error in userStore
+                userStore.error =
+                    error instanceof Error
+                        ? error.message
+                        : "Authentication failed";
+                menuStore.setSelectedPage("error");
             }
         }
     }
 
     render() {
-        return html`<div>Processing authentication...</div>`;
+        return html`
+            <div class="callback-container">
+                <p>Processing authentication...</p>
+            </div>
+        `;
     }
 }

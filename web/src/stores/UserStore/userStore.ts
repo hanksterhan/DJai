@@ -24,12 +24,11 @@ export class UserStore {
             const authStatus = await spotifyAuthService.getAuthStatus();
             this.isAuthenticated = authStatus.isAuthenticated;
 
-            // Set an error if the user is not authenticated
-            if (!this.isAuthenticated) {
+            // Only set an error if the user is not authenticated and not loading
+            if (!this.isAuthenticated && !this.isLoading) {
                 this.error = "User is not authenticated";
             }
         } catch (error) {
-            console.error("Failed to check auth status:", error);
             this.isAuthenticated = false;
             this.error =
                 error instanceof Error
@@ -41,13 +40,18 @@ export class UserStore {
     }
 
     @action
+    setAuthenticated(value: boolean) {
+        this.isAuthenticated = value;
+    }
+
+    @action
     async login() {
         try {
             this.isLoading = true;
             this.error = null;
             await spotifyAuthService.login();
+            // No need to set isAuthenticated here as the page will redirect to Spotify
         } catch (error) {
-            console.error("Login failed:", error);
             this.error =
                 error instanceof Error
                     ? error.message
@@ -56,6 +60,11 @@ export class UserStore {
         } finally {
             this.isLoading = false;
         }
+    }
+
+    @action
+    setError(error: string | null) {
+        this.error = error;
     }
 }
 
