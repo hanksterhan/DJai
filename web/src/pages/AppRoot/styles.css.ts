@@ -24,4 +24,10 @@ export const styles = css`
         background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.8));
         padding: 16px;
     }
+
+    .tabs-container {
+        padding: 1rem;
+        background-color: var(--spectrum-global-color-gray-50);
+        border-bottom: 1px solid var(--spectrum-global-color-gray-200);
+    }
 `;

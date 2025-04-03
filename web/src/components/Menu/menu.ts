@@ -13,10 +13,8 @@ interface MenuItemDetails {
 
 // id is internal, name is shown in menu
 const MENU_ITEMS: MenuItemDetails[] = [
-    { id: "teams", name: "Teams" },
-    { id: "leagues", name: "Leagues" },
-    { id: "nba", name: "Fantasy Basketball" },
-    { id: "nfl", name: "Fantasy Football" },
+    { id: "home", name: "Home" },
+    { id: "queue", name: "Queue" },
 ];
 
 @customElement("app-menu")

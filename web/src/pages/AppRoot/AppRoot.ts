@@ -35,16 +35,16 @@ export class AppRoot extends MobxLitElement {
 
         return html`
             <sp-theme system="spectrum" color="light" scale="medium" dir="ltr">
-                ${menuStore.selectedPage !== "home" &&
-                menuStore.selectedPage !== "callback"
-                    ? html`<app-menu></app-menu>`
-                    : ""}
+                <app-menu></app-menu>
                 <div class="main-content">
                     ${menuStore.selectedPage === "home"
                         ? html`<home-page></home-page>`
                         : ""}
                     ${menuStore.selectedPage === "callback"
                         ? html`<callback-page></callback-page>`
+                        : ""}
+                    ${menuStore.selectedPage === "queue"
+                        ? html`<queue-page></queue-page>`
                         : ""}
                     <!-- ${menuStore.selectedPage === "teams"
                         ? html`<teams-page></teams-page>`
