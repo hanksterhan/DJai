@@ -1,8 +1,8 @@
 import { html } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement } from "lit/decorators.js";
 import { MobxLitElement } from "@adobe/lit-mobx";
-import { spotifyAuthService } from "../../services/spotifyAuthService";
 import { playlistStore } from "../../stores/PlaylistStore/playlistStore";
+import { userStore } from "../../stores/UserStore/userStore";
 import { styles } from "./styles.css";
 
 @customElement("home-page")
@@ -12,57 +12,28 @@ export class Home extends MobxLitElement {
         return styles;
     }
 
-    @state()
-    private isAuthenticated = false;
-
-    @state()
-    private isLoading = true;
-
-    @state()
-    private error: string | null = null;
-
     async connectedCallback() {
         super.connectedCallback();
-        await this.checkAuthStatus();
+        await this.loadData();
     }
 
     async updated(changedProperties: Map<string, any>) {
         super.updated(changedProperties);
-        // Recheck auth status when component becomes visible
+        // Reload data when component becomes visible
         if (changedProperties.has("hidden") && !this.hidden) {
-            await this.checkAuthStatus();
+            await this.loadData();
         }
     }
 
-    private async checkAuthStatus() {
-        try {
-            this.isLoading = true;
-            this.error = null;
-            const authStatus = await spotifyAuthService.getAuthStatus();
-            this.isAuthenticated = authStatus.isAuthenticated;
-
-            if (this.isAuthenticated) {
-                // Load playlists if authenticated
-                await playlistStore.fetchPlaylists();
-            }
-        } catch (error) {
-            console.error("Failed to check auth status:", error);
-            this.isAuthenticated = false;
-            this.error =
-                error instanceof Error
-                    ? error.message
-                    : "Failed to check authentication status";
-        } finally {
-            this.isLoading = false;
+    private async loadData() {
+        if (userStore.isAuthenticated) {
+            // Load playlists if authenticated
+            await playlistStore.fetchPlaylists();
         }
-    }
-
-    private async handleLogin() {
-        await spotifyAuthService.login();
     }
 
     render() {
-        if (this.isLoading) {
+        if (userStore.isLoading) {
             return html`
                 <div class="home-container">
                     <p>Loading...</p>
@@ -70,20 +41,17 @@ export class Home extends MobxLitElement {
             `;
         }
 
-        if (this.error) {
+        if (userStore.error) {
             return html`
                 <div class="home-container">
-                    <p class="error">${this.error}</p>
-                    <sp-button variant="primary" @click=${this.handleLogin}>
-                        Connect Spotify
-                    </sp-button>
+                    <p class="error">${userStore.error}</p>
                 </div>
             `;
         }
 
         return html`
             <div class="home-container">
-                ${this.isAuthenticated
+                ${userStore.isAuthenticated
                     ? html`
                           <p>You're connected to Spotify!</p>
                           ${playlistStore.isLoading
@@ -96,12 +64,6 @@ export class Home extends MobxLitElement {
                       `
                     : html`
                           <p>Connect your Spotify account to get started</p>
-                          <sp-button
-                              variant="primary"
-                              @click=${this.handleLogin}
-                          >
-                              Connect Spotify
-                          </sp-button>
                       `}
             </div>
         `;
