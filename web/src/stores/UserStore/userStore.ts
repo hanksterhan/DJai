@@ -1,4 +1,4 @@
-import { action, makeObservable, observable } from "mobx";
+import { action, makeObservable, observable, runInAction } from "mobx";
 import { spotifyAuthService } from "../../services/spotifyAuthService";
 
 export class UserStore {
@@ -22,20 +22,24 @@ export class UserStore {
             this.isLoading = true;
             this.error = null;
             const authStatus = await spotifyAuthService.getAuthStatus();
-            this.isAuthenticated = authStatus.isAuthenticated;
-
-            // Set error if the user is not authenticated
-            if (!this.isAuthenticated) {
-                this.error = "User is not authenticated";
-            }
+            runInAction(() => {
+                this.isAuthenticated = authStatus.isAuthenticated;
+                if (!this.isAuthenticated) {
+                    this.error = "User is not authenticated";
+                }
+            });
         } catch (error) {
-            this.isAuthenticated = false;
-            this.error =
-                error instanceof Error
-                    ? error.message
-                    : "Failed to check authentication status";
+            runInAction(() => {
+                this.isAuthenticated = false;
+                this.error =
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to check authentication status";
+            });
         } finally {
-            this.isLoading = false;
+            runInAction(() => {
+                this.isLoading = false;
+            });
         }
     }
 
@@ -52,13 +56,17 @@ export class UserStore {
             await spotifyAuthService.login();
             // No need to set isAuthenticated here as the page will redirect to Spotify
         } catch (error) {
-            this.error =
-                error instanceof Error
-                    ? error.message
-                    : "Failed to connect to Spotify";
+            runInAction(() => {
+                this.error =
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to connect to Spotify";
+            });
             // Don't redirect to Spotify if there's an error
         } finally {
-            this.isLoading = false;
+            runInAction(() => {
+                this.isLoading = false;
+            });
         }
     }
 

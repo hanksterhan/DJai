@@ -43,19 +43,11 @@ export class Home extends MobxLitElement {
 
         return html`
             <div class="home-container">
-                ${userStore.isAuthenticated
-                    ? html`
-                          ${playlistStore.isLoading
-                              ? html`<p>Loading playlists...</p>`
-                              : playlistStore.error
-                                ? html`<p class="error">
-                                      ${playlistStore.error}
-                                  </p>`
-                                : html`<playlist-table></playlist-table>`}
-                      `
-                    : html`
-                          <p>Connect your Spotify account to get started</p>
-                      `}
+                ${playlistStore.isLoading
+                    ? html`<p>Loading playlists...</p>`
+                    : playlistStore.error
+                      ? html`<p class="error">${playlistStore.error}</p>`
+                      : html`<playlist-table></playlist-table>`}
             </div>
         `;
     }

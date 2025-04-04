@@ -26,6 +26,8 @@ export class Callback extends MobxLitElement {
                 // Also check auth status to ensure everything is in sync
                 await userStore.checkAuthStatus();
 
+                // Reset URL to root path and redirect to home page
+                window.history.replaceState({}, document.title, "/");
                 menuStore.setSelectedPage("home");
             } catch (error) {
                 // Set error in userStore
